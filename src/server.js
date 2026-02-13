@@ -4,7 +4,9 @@ require("dotenv").config();
 const { initializeDatabase } = require("./models/index");
 const app = require("./app");
 
+
 const fs = require("fs").promises;
+
 
 const PORT = process.env.PORT;
 const UPLOADS_DIR = "./uploads";
@@ -22,6 +24,8 @@ async function ensureUploadsFolder() {
     }
   }
 }
+
+
 
 async function startServer() {
   try {
