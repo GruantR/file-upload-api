@@ -29,7 +29,7 @@ router.get('/test-db', async (req, res) => {
   }
 });
 
-router.use('/upload',uploadRoutes);
+router.use('/files',uploadRoutes);
 
 module.exports = router;
 

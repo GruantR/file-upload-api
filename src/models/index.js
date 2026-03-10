@@ -3,10 +3,19 @@
 
 const sequelize = require("../config/database");
 const File = require("./File");
+const CleanupLog = require("./CleanupLog");
 
 const models = {
   File,
+  CleanupLog,
 };
+
+File.hasMany(CleanupLog, {
+  foreignKey: "fileUuid",
+});
+CleanupLog.belongsTo(File, {
+  foreignKey: "fileUuid",
+});
 
 const initializeDatabase = async () => {
   try {
@@ -31,7 +40,8 @@ const initializeDatabase = async () => {
   }
 };
 
-module.exports = { 
+module.exports = {
   models,
-  sequelize,      // Экспортируем тоже для миграций 
-  initializeDatabase };
+  sequelize, // Экспортируем тоже для миграций
+  initializeDatabase,
+};

@@ -3,6 +3,7 @@
 require("dotenv").config();
 const { initializeDatabase } = require("./models/index");
 const app = require("./app");
+const logger = require('./utils/logger');
 
 
 const fs = require("fs").promises;
@@ -14,12 +15,12 @@ const UPLOADS_DIR = "./uploads";
 async function ensureUploadsFolder() {
   try {
     await fs.mkdir(UPLOADS_DIR, { recursive: true });
-    console.log(`Папка ${UPLOADS_DIR} успешно сохдана`);
+    logger.info(`Папка ${UPLOADS_DIR} успешно сохдана`);
   } catch (err) {
     if (err.code === "EEXIST") {
-      console.log(`Папка ${UPLOADS_DIR} уже существует`);
+      logger.info(`Папка ${UPLOADS_DIR} уже существует`);
     } else {
-      console.error("Ошибка создания папки:", err.message);
+      logger.error("Ошибка создания папки:", err.message);
       throw err;
     }
   }
@@ -35,15 +36,15 @@ async function startServer() {
     }
 
     app.listen(PORT, () => {
-      console.log(`Сервер запущен на порту ${PORT}`);
-      console.log(`📁 База данных: ${process.env.DB_NAME}`);
+      logger.info(`Сервер запущен на порту ${PORT}`)
+      logger.info(`📁 База данных: ${process.env.DB_NAME}`)
     });
   } catch (err) {
-    console.error("❌ Ошибка запуска:", err);
-    console.error("   Проверь:");
-    console.error("   1. Запущен ли PostgreSQL?");
-    console.error("   2. Правильные ли логин/пароль в .env?");
-    console.error("   3. Существует ли БД", process.env.DB_NAME, "?");
+    logger.error("❌ Ошибка запуска:", err);
+    logger.error("   Проверь:");
+    logger.error("   1. Запущен ли PostgreSQL?");
+    logger.error("   2. Правильные ли логин/пароль в .env?");
+    logger.error("   3. Существует ли БД", process.env.DB_NAME, "?");
     process.exit(1); //  команда для немедленного завершения процесса Node.js с указанием кода выхода (1 — НЕУДАЧА (ошибка, сбой))
   }
 }

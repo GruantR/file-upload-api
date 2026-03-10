@@ -41,11 +41,6 @@ const File = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    //(путь к файлу на сервере)
-    path: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     //(".png", ".jpg" и т.д.)
     extension: {
       type: DataTypes.STRING,
@@ -56,7 +51,7 @@ const File = sequelize.define(
   {
     tableName: "files",
     timestamps: true,
-    paranoid: true,
+    paranoid: true,  // мягкое удаление
     indexes: [
       {
         unique: true,
