@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const File = require('../models/File');
 const uploadRoutes = require('./uploadRoutes');
+const authRoutes = require('./authRoutes');
 
 
 router.get("/", (req, res) => {
@@ -30,6 +31,7 @@ router.get('/test-db', async (req, res) => {
 });
 
 router.use('/files',uploadRoutes);
+router.use('/auth',authRoutes);
 
 module.exports = router;
 

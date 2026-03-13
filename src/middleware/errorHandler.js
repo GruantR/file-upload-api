@@ -54,6 +54,28 @@ const errorHandler = (err, req, res, next) => {
       },
     });
   }
+
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+        success: false,
+        error: {
+            code: 401,
+            message: 'Недействительный токен',
+            type: 'JsonWebTokenError'
+        }
+    });
+}
+
+if (err.name === 'TokenExpiredError') {
+    return res.status(401).json({
+        success: false,
+        error: {
+            code: 401,
+            message: 'Срок действия токена истёк',
+            type: 'TokenExpiredError'
+        }
+    });
+}
   // Любая другая ошибка (500)
   const statusCode = err.statusCode || 500;
   const message =

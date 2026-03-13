@@ -12,6 +12,15 @@ const File = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notNull: {
+          msg: "User ID обязателен",
+        },
+      },
+    },
     //(дополнительный уникальный идентификатор)
     uuid: {
       type: DataTypes.UUID,
@@ -51,7 +60,7 @@ const File = sequelize.define(
   {
     tableName: "files",
     timestamps: true,
-    paranoid: true,  // мягкое удаление
+    paranoid: true, // мягкое удаление
     indexes: [
       {
         unique: true,
