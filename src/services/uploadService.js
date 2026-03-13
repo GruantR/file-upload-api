@@ -6,10 +6,12 @@ const path = require("path");
 const fs = require("fs").promises;
 const logger = require("../utils/logger");
 const uploadConfig = require("../config/upload");
+const getStorage = require("../storage/index");
 
 class UploadService {
   async saveFile(file) {
     try {
+      const storage = getStorage();
       const savedFile = await File.create({
         fileName: file.filename,
         originalName: file.originalname,
@@ -17,6 +19,7 @@ class UploadService {
         mimetype: file.mimetype,
         extension: path.extname(file.originalname).replace(".", ""),
       });
+      await storage.save(file,savedFile)
       return savedFile;
     } catch (err) {
       throw err;
@@ -34,23 +37,23 @@ class UploadService {
       throw err;
     }
   }
+
   async getAllFiles(limit, offset) {
     try {
       const allFiles = await File.findAll({
-        limit:limit,
+        limit: limit,
         offset: offset,
-        order: [['createdAt', 'DESC']]
+        order: [["createdAt", "DESC"]],
       });
       const total = await File.count();
-      return {allFiles, total};
-
-      
+      return { allFiles, total };
     } catch (err) {
       throw err;
     }
   }
   async deleteFile(uuid) {
     let transaction;
+    const storage = getStorage();
     try {
       transaction = await sequelize.transaction();
       const getFile = await File.findOne({
@@ -62,10 +65,7 @@ class UploadService {
         await transaction.rollback();
         throw new Error("Файл не найден");
       }
-      const absolutePath = path.join(
-        uploadConfig.absoluteUploadDir,
-        getFile.fileName,
-      );
+      const absolutePath = await storage.getPath(getFile.fileName);
 
       await getFile.destroy({
         transaction,
@@ -73,7 +73,8 @@ class UploadService {
       await transaction.commit();
 
       try {
-        await fs.unlink(absolutePath);
+        await storage.delete(getFile.fileName);
+
         logger.info(`✅ Файл удалён: ${absolutePath}`);
       } catch (unlinkError) {
         await CleanupLog.create({
