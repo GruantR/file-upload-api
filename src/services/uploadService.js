@@ -7,6 +7,7 @@ const fs = require("fs").promises;
 const logger = require("../utils/logger");
 const uploadConfig = require("../config/upload");
 const getStorage = require("../storage/index");
+const {NotFoundError} = require('../utils/errors');
 
 class UploadService {
   async saveFile(file) {
@@ -19,7 +20,7 @@ class UploadService {
         mimetype: file.mimetype,
         extension: path.extname(file.originalname).replace(".", ""),
       });
-      await storage.save(file,savedFile)
+      await storage.save(file, savedFile);
       return savedFile;
     } catch (err) {
       throw err;
@@ -30,7 +31,7 @@ class UploadService {
     try {
       const getFile = await File.findOne({ where: { uuid } });
       if (!getFile) {
-        throw new Error("Файл не найден");
+        throw new NotFoundError("Файл не найден");
       }
       return getFile;
     } catch (err) {
@@ -63,7 +64,7 @@ class UploadService {
       });
       if (!getFile) {
         await transaction.rollback();
-        throw new Error("Файл не найден");
+        throw new NotFoundError("Файл не найден");
       }
       const absolutePath = await storage.getPath(getFile.fileName);
 

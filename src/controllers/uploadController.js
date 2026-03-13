@@ -1,12 +1,13 @@
 // src/controllers/uploadController.js
 const path = require("path");
 const UploadService = require("../services/uploadService");
-const isValidUUID = require("../utils/validation");
+const isValidUUID = require("../utils/validationUUID");
 const uploadConfig = require("../config/upload");
 const getStorage = require("../storage/index");
+const {ValidationError} = require('../utils/errors');
 
 class UploadController {
-  async uploadFile(req, res) {
+  async uploadFile(req, res, next) {
     try {
       const savedFile = await UploadService.saveFile(req.file);
       return res.json({
@@ -21,22 +22,22 @@ class UploadController {
         },
       });
     } catch (err) {
-      res.status(500).json({ error: "Ошибка при сохранении файла" });
+      next(err);
     }
   }
 
   async _getFileAndStorage(uuid) {
     if (!isValidUUID(uuid)) {
-      throw new Error("Неверный формат UUID");
+      throw new ValidationError("Неверный формат UUID");
     }
     const storage = getStorage();
     const getFile = await UploadService.getFileByUuid(uuid);
     return { storage, getFile };
   }
 
-  
 
-  async getFile(req, res) {
+
+  async getFile(req, res, next) {
     try {
       const { uuid } = req.params;
       const {storage, getFile} = await this._getFileAndStorage(uuid)
@@ -54,12 +55,11 @@ class UploadController {
         res.sendFile(absolutePath);
       }
     } catch (err) {
-      console.error("🔥 Реальная ошибка:", err);
-      res.status(500).json({ error: err.message });
+      next(err)
     }
   }
 
-  async forceDownloadFile(req, res) {
+  async forceDownloadFile(req, res, next) {
     try {
         const { uuid } = req.params;
         const { storage, getFile } = await this._getFileAndStorage(uuid);
@@ -74,11 +74,11 @@ class UploadController {
             res.download(absolutePath, getFile.originalName);
         }
     } catch (err) {
-        res.status(404).json({ error: err.message });
+        next(err);
     }
 }
 
-  async getAllFiles(req, res) {
+  async getAllFiles(req, res, next) {
     try {
       const limit = parseInt(req.query.limit) || 10;
       const offset = parseInt(req.query.offset) || 0;
@@ -106,23 +106,21 @@ class UploadController {
         },
       });
     } catch (err) {
-      res.status(404).json({ error: "Ошибка при чтении файлов" });
+      next(err)
     }
   }
 
-  async deleteFile(req, res) {
+  async deleteFile(req, res, next) {
     try {
       const { uuid } = req.params;
-      if (!isValidUUID(uuid)) {
-        return res.status(400).json({ error: "Неверный формат UUID" });
-      }
+      const { storage, getFile } = await this._getFileAndStorage(uuid);
       const deleteFile = await UploadService.deleteFile(uuid);
       res.json({
         success: true,
         deleteFile: deleteFile,
       });
     } catch (err) {
-      res.status(404).json({ error: "Ошибка удаления файла" });
+      next(err)
     }
   }
 }
