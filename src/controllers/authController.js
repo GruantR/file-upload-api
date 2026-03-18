@@ -40,7 +40,6 @@ class authController {
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true, // ❌ Недоступно из JavaScript (защита от XSS)
         secure: process.env.NODE_ENV === "production", // true только в production (HTTPS)
-       // sameSite: "strict", // Защита от CSRF-атак
         sameSite: "lax",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней в миллисекундах
       });
