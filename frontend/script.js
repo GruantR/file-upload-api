@@ -3,10 +3,14 @@ const API_URL = 'http://127.0.0.1:3000/api';
 // Состояние приложения
 let currentUser = null;
 let currentToken = localStorage.getItem('token');
-let currentFilter = 'all'; // 'all', 'local', 's3'
+let currentFilter = 'all';
 let currentPage = 0;
-const limit = 5;           // сколько файлов показывать на одной странице
-let allFiles = [];         // полный список файлов (без фильтрации)
+const limit = 5;
+let allFiles = [];
+
+// Флаг, чтобы не зациклиться при обновлении токена
+let isRefreshing = false;
+let refreshSubscribers = [];
 
 // Элементы DOM
 const loginForm = document.getElementById('login-form');
@@ -20,8 +24,9 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 
 // Проверяем, есть ли уже активная сессия
 if (currentToken) {
+    console.log('🔑 Токен найден в localStorage');
     showAppInterface();
-    loadAllFiles(); // загружаем все файлы
+    loadAllFiles();
 }
 
 // Переключение вкладок авторизации
@@ -42,9 +47,101 @@ filterBtns.forEach(btn => {
         btn.classList.add('active');
         currentFilter = btn.dataset.filter;
         currentPage = 0;
-        displayCurrentPage(); // отображаем текущую страницу с учётом фильтра
+        displayCurrentPage();
     });
 });
+
+// Универсальная функция для запросов с автоматическим обновлением токена
+async function fetchWithAuth(url, options = {}) {
+    console.log('📡 Запрос к:', url);
+    console.log('🔑 Текущий токен:', currentToken ? currentToken.substring(0, 20) + '...' : 'отсутствует');
+    
+    const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${currentToken}`
+    };
+    
+    let response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include'
+    });
+
+    console.log('📨 Статус ответа:', response.status);
+
+    // Если токен истёк (401)
+    if (response.status === 401) {
+        console.log('⚠️ Получен 401, пробуем обновить токен...');
+        
+        const newToken = await refreshToken();
+        if (newToken) {
+            console.log('✅ Токен обновлён, повторяем запрос');
+            currentToken = newToken;
+            localStorage.setItem('token', currentToken);
+            
+            const newHeaders = {
+                ...options.headers,
+                'Authorization': `Bearer ${currentToken}`
+            };
+            response = await fetch(url, {
+                ...options,
+                headers: newHeaders,
+                credentials: 'include'
+            });
+            console.log('📨 Повторный запрос, статус:', response.status);
+        } else {
+            console.log('❌ Не удалось обновить токен, выполняем logout');
+            logout();
+            throw new Error('Сессия истекла');
+        }
+    }
+    
+    return response;
+}
+
+// Функция обновления токена
+async function refreshToken() {
+    console.log('🔄 refreshToken() вызван');
+    
+    if (isRefreshing) {
+        console.log('⏳ Уже обновляем токен, добавляем в очередь');
+        return new Promise(resolve => {
+            refreshSubscribers.push(resolve);
+        });
+    }
+
+    isRefreshing = true;
+    console.log('🚀 Начинаем обновление токена...');
+    
+    try {
+        const response = await fetch(`${API_URL}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        
+        console.log('📨 Ответ от /refresh, статус:', response.status);
+        
+        if (!response.ok) {
+            throw new Error('Не удалось обновить токен');
+        }
+        
+        const data = await response.json();
+        console.log('✅ Токен успешно обновлён');
+        
+        const newToken = data.data.accessToken;
+        
+        refreshSubscribers.forEach(cb => cb(newToken));
+        refreshSubscribers = [];
+        
+        return newToken;
+    } catch (err) {
+        console.error('❌ Ошибка обновления токена:', err);
+        refreshSubscribers = [];
+        return null;
+    } finally {
+        isRefreshing = false;
+    }
+}
 
 // Регистрация
 document.getElementById('register-btn').addEventListener('click', async () => {
@@ -89,18 +186,20 @@ document.getElementById('login-btn').addEventListener('click', async () => {
         const res = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email, password })
         });
         
         const data = await res.json();
         if (data.success) {
-            currentToken = data.data.token;
+            currentToken = data.data.accessToken;
             currentUser = data.data.user;
             
             localStorage.setItem('token', currentToken);
+            console.log('✅ Успешный вход, токен сохранён');
             
             showAppInterface();
-            loadAllFiles(); // загружаем все файлы
+            loadAllFiles();
         } else {
             alert('Ошибка: ' + data.error.message);
         }
@@ -110,7 +209,17 @@ document.getElementById('login-btn').addEventListener('click', async () => {
 });
 
 // Выход
-document.getElementById('logout-btn').addEventListener('click', () => {
+async function logout() {
+    console.log('🚪 Выход из системы');
+    try {
+        await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (err) {
+        console.error('Logout error:', err);
+    }
+    
     localStorage.removeItem('token');
     currentToken = null;
     currentUser = null;
@@ -119,7 +228,9 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     filesSection.classList.add('hidden');
     logoutSection.classList.add('hidden');
     document.querySelector('.auth-section').classList.remove('hidden');
-});
+}
+
+document.getElementById('logout-btn').addEventListener('click', logout);
 
 function showAppInterface() {
     uploadSection.classList.remove('hidden');
@@ -128,7 +239,7 @@ function showAppInterface() {
     document.querySelector('.auth-section').classList.add('hidden');
 }
 
-// Загрузка файла (с выбором хранилища)
+// Загрузка файла
 document.getElementById('upload-btn').addEventListener('click', async () => {
     const fileInput = document.getElementById('file-input');
     if (!fileInput.files[0]) {
@@ -145,11 +256,8 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
     progress.classList.remove('hidden');
     
     try {
-        const res = await fetch(`${API_URL}/files?storage=${storageType}`, {
+        const res = await fetchWithAuth(`${API_URL}/files?storage=${storageType}`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${currentToken}`
-            },
             body: formData
         });
         
@@ -158,7 +266,7 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
         
         if (data.success) {
             fileInput.value = '';
-            loadAllFiles(); // перезагружаем весь список
+            loadAllFiles();
         } else {
             alert('Ошибка: ' + data.error.message);
         }
@@ -168,19 +276,16 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
     }
 });
 
-// Загрузка всех файлов с сервера (без пагинации)
+// Загрузка всех файлов
 async function loadAllFiles() {
     try {
-        // Запрашиваем все файлы, установив большой limit
-        const res = await fetch(`${API_URL}/files?limit=1000&offset=0`, {
-            headers: { 'Authorization': `Bearer ${currentToken}` }
-        });
+        const res = await fetchWithAuth(`${API_URL}/files?limit=1000&offset=0`);
         
         const data = await res.json();
         if (data.success) {
-            allFiles = data.files;          // сохраняем все файлы
-            displayCurrentPage();            // отображаем первую страницу с текущим фильтром
-            updatePaginationInfo();          // обновляем информацию о пагинации (общее количество)
+            allFiles = data.files;
+            displayCurrentPage();
+            updatePaginationInfo();
         } else {
             filesList.innerHTML = 'Ошибка загрузки списка';
         }
@@ -189,9 +294,8 @@ async function loadAllFiles() {
     }
 }
 
-// Отображение текущей страницы с учётом фильтра
+// Отображение текущей страницы
 function displayCurrentPage() {
-    // Фильтруем файлы в зависимости от currentFilter
     let filteredFiles = allFiles;
     if (currentFilter === 'local') {
         filteredFiles = allFiles.filter(f => f.storageType === 'localStorage');
@@ -199,15 +303,11 @@ function displayCurrentPage() {
         filteredFiles = allFiles.filter(f => f.storageType === 's3Storage');
     }
     
-    // Вычисляем начало и конец страницы
     const start = currentPage * limit;
     const end = start + limit;
     const pageFiles = filteredFiles.slice(start, end);
     
-    // Отображаем файлы
     displayFiles(pageFiles);
-    
-    // Отображаем пагинацию для отфильтрованного списка
     displayPagination(filteredFiles.length);
 }
 
@@ -255,24 +355,20 @@ function displayPagination(totalFiltered) {
     
     let html = '';
     
-    // Информация о записях
     const startRecord = currentPage * limit + 1;
     const endRecord = Math.min((currentPage + 1) * limit, totalFiltered);
     html += `<div class="pagination-info">📄 ${startRecord}-${endRecord} из ${totalFiltered}</div>`;
     
     html += '<div class="pagination-controls">';
     
-    // Первая страница
     if (currentPage > 0) {
         html += `<button class="page-btn" onclick="goToPage(0)" title="Первая страница">⏮️</button>`;
     }
     
-    // Предыдущая
     if (currentPage > 0) {
         html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})">◀ Пред.</button>`;
     }
     
-    // Номера страниц (до 5 вокруг текущей)
     const startPage = Math.max(0, currentPage - 2);
     const endPage = Math.min(totalPages - 1, currentPage + 2);
     
@@ -294,12 +390,10 @@ function displayPagination(totalFiltered) {
         html += `<button class="page-btn" onclick="goToPage(${totalPages - 1})">${totalPages}</button>`;
     }
     
-    // Следующая
     if (currentPage < totalPages - 1) {
         html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">След. ▶</button>`;
     }
     
-    // Последняя
     if (currentPage < totalPages - 1) {
         html += `<button class="page-btn" onclick="goToPage(${totalPages - 1})" title="Последняя страница">⏭️</button>`;
     }
@@ -314,8 +408,6 @@ function goToPage(page) {
 }
 
 function updatePaginationInfo() {
-    // Вызывается при изменении allFiles (загрузка/удаление)
-    // Просто перерисовываем текущую страницу
     displayCurrentPage();
 }
 
@@ -335,14 +427,13 @@ window.deleteFile = async (uuid) => {
     if (!confirm('Удалить файл?')) return;
     
     try {
-        const res = await fetch(`${API_URL}/files/${uuid}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${currentToken}` }
+        const res = await fetchWithAuth(`${API_URL}/files/${uuid}`, {
+            method: 'DELETE'
         });
         
         const data = await res.json();
         if (data.success) {
-            loadAllFiles(); // перезагружаем весь список
+            loadAllFiles();
         } else {
             alert('Ошибка: ' + data.error.message);
         }

@@ -5,12 +5,14 @@ const sequelize = require("../config/database");
 const File = require("./File");
 const CleanupLog = require("./CleanupLog");
 const User = require("./User");
+const RefreshToken = require('./RefreshToken');
 const logger = require('../utils/logger');
 
 const models = {
   File,
   CleanupLog,
   User,
+  RefreshToken,
 };
 
 File.hasMany(CleanupLog, {
@@ -26,6 +28,15 @@ User.hasMany(File, {
 File.belongsTo(User, {
   foreignKey: "userId",
 });
+
+User.hasMany(RefreshToken, {
+  foreignKey: "userId",
+});
+RefreshToken.belongsTo(User, {
+  foreignKey: "userId",
+});
+
+
 
 const initializeDatabase = async () => {
   try {
