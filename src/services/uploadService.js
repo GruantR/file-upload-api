@@ -6,19 +6,23 @@ const path = require("path");
 const fs = require("fs").promises;
 const logger = require("../utils/logger");
 const uploadConfig = require("../config/upload");
-const getStorage = require("../storage/index");
+const {getStorageByType, getStorage} = require("../storage/index");
 const {NotFoundError} = require('../utils/errors');
 
 class UploadService {
-  async saveFile(file) {
+  async saveFile(file, userId, storageOption) {
     try {
-      const storage = getStorage();
+      const storageType = storageOption === 's3' ? 's3Storage' : 'localStorage';
+      const storage = getStorageByType(storageType);
+      
       const savedFile = await File.create({
         fileName: file.filename,
+        userId: userId,
         originalName: file.originalname,
         size: file.size,
         mimetype: file.mimetype,
         extension: path.extname(file.originalname).replace(".", ""),
+        storageType: storageType
       });
       await storage.save(file, savedFile);
       return savedFile;
@@ -52,9 +56,10 @@ class UploadService {
       throw err;
     }
   }
-  async deleteFile(uuid) {
+  async deleteFile(uuid, storageType) {
     let transaction;
-    const storage = getStorage();
+    const storage = getStorageByType(storageType);
+   
     try {
       transaction = await sequelize.transaction();
       const getFile = await File.findOne({

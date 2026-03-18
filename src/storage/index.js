@@ -6,16 +6,21 @@
 const LocalStorage = require('./drivers/LocalStorage');
 const S3Storage = require('./drivers/S3Storage');
 
-const getStorage = () => {
-    const driver = process.env.STORAGE_DRIVER || 'local';
-
-    switch(driver) {
-        case 'local':
+const getStorageByType = (type) => {
+        switch(type) {
+        case 'localStorage':
             return new LocalStorage();
-        case 's3':
+        case 's3Storage':
             return new S3Storage();
         default: return new LocalStorage();
     }
 };
+//getStorageByType(type) — получает драйвер по типу из БД
 
-module.exports = getStorage;
+const getStorage = () => {
+    const driver = process.env.STORAGE_DRIVER === 's3' ? 's3Storage' : 'localStorage';
+    return getStorageByType(driver);
+};
+//getStorage() — как раньше, для обратной совместимости
+
+module.exports = {getStorageByType, getStorage} ;

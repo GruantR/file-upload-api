@@ -1,4 +1,5 @@
 //src/models/File.js
+const { type } = require("express/lib/response");
 const sequelize = require("../config/database");
 const { DataTypes } = require("sequelize");
 
@@ -56,6 +57,11 @@ const File = sequelize.define(
       allowNull: false,
       validate: { isLowercase: true },
     },
+    storageType: {
+      type: DataTypes.ENUM('localStorage', 's3Storage'),
+      allowNull: false,
+      defaultValue: 'localStorage'
+    }
   },
   {
     tableName: "files",

@@ -16,7 +16,7 @@ const authorizeToken = async (req, res, next) => {
     }
     const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
     const userFromDecodedToken = await User.findOne({
-      where: { uuid: decodedToken.uuid },
+      where: { uuid: decodedToken.userUuid },
     });
     req.user = userFromDecodedToken;
     next();
@@ -24,3 +24,5 @@ const authorizeToken = async (req, res, next) => {
     next(err);
   }
 };
+
+module.exports = authorizeToken

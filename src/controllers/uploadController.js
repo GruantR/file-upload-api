@@ -3,13 +3,14 @@ const path = require("path");
 const UploadService = require("../services/uploadService");
 const isValidUUID = require("../utils/validationUUID");
 const uploadConfig = require("../config/upload");
-const getStorage = require("../storage/index");
+const {getStorageByType, getStorage} = require("../storage/index");
 const {ValidationError} = require('../utils/errors');
+
 
 class UploadController {
   async uploadFile(req, res, next) {
     try {
-      const savedFile = await UploadService.saveFile(req.file);
+      const savedFile = await UploadService.saveFile(req.file, req.user.id, req.query.storage);
       return res.json({
         success: true,
         file: {
@@ -30,8 +31,8 @@ class UploadController {
     if (!isValidUUID(uuid)) {
       throw new ValidationError("Неверный формат UUID");
     }
-    const storage = getStorage();
-    const getFile = await UploadService.getFileByUuid(uuid);
+const getFile = await UploadService.getFileByUuid(uuid);
+const storage = getStorageByType(getFile.storageType); 
     return { storage, getFile };
   }
 
@@ -94,6 +95,7 @@ class UploadController {
         type: item.mimetype,
         storedName: item.fileName,
         createdAt: item.createdAt,
+        storageType: item.storageType,
       }));
       res.json({
         success: true,
@@ -113,8 +115,8 @@ class UploadController {
   async deleteFile(req, res, next) {
     try {
       const { uuid } = req.params;
-      const { storage, getFile } = await this._getFileAndStorage(uuid);
-      const deleteFile = await UploadService.deleteFile(uuid);
+      const {storage, getFile} = await this._getFileAndStorage(uuid)
+      const deleteFile = await UploadService.deleteFile(uuid, getFile.storageType);
       res.json({
         success: true,
         deleteFile: deleteFile,
