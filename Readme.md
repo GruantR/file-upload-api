@@ -66,59 +66,59 @@ src/
 
 ## 🚀 Быстрый старт
 
-### 1. Клонирование
+## 1. Клонирование
 git clone https://github.com/yourusername/fileflow-hub.git
 cd fileflow-hub
 
-### 2. Установка зависимостей
+## 2. Установка зависимостей
 npm install
 
-### 3. Настройка окружения
+## 3. Настройка окружения
 Создайте файл .env из примера:
 cp .env.example .env
 Отредактируйте .env под ваши параметры:
 
-# Server
+### Server
 PORT=3000
 NODE_ENV=development
 
-# Database
+### Database
 DB_NAME=fileflow_hub
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_HOST=localhost
 DB_PORT=5432
 
-# Auth
+### Auth
 SECRET_KEY=your_super_secret_key_change_me
 
-# Storage
+### Storage
 STORAGE_DRIVER=local  # или 's3' для MinIO
 
-# MinIO (если используете S3)
+### MinIO (если используете S3)
 MINIO_ENDPOINT=http://localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=my-bucket
 
-### 4. Запуск PostgreSQL и MinIO (через Docker)
-# PostgreSQL
+## 4. Запуск PostgreSQL и MinIO (через Docker)
+### PostgreSQL
 docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15
 
-# MinIO (для S3-режима)
+### MinIO (для S3-режима)
 docker run -d --name minio -p 9000:9000 -p 9001:9001 \
   -e "MINIO_ROOT_USER=minioadmin" \
   -e "MINIO_ROOT_PASSWORD=minioadmin" \
   minio/minio server /data --console-address ":9001"
 
-### 5. Миграции БД
+## 5. Миграции БД
 npx sequelize-cli db:migrate
 
-### 6. Запуск сервера
+## 6. Запуск сервера
 npm start
 Сервер будет доступен на http://localhost:3000.
 
-### 7. Запуск фронтенд-демо
+## 7. Запуск фронтенд-демо
 Откройте файл frontend/index.html в браузере (или через Live Server).
 
 
