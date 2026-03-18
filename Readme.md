@@ -1,4 +1,6 @@
-# FileFlow Hub — гибридное файловое хранилище
+# FileFlow Hub
+
+> Гибридное файловое хранилище с поддержкой локального диска и S3-совместимого облака (MinIO)
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express-4.x-lightgrey)](https://expressjs.com)
@@ -7,199 +9,263 @@
 [![JWT](https://img.shields.io/badge/JWT-auth-yellow)](https://jwt.io)
 [![MinIO](https://img.shields.io/badge/MinIO-S3--compatible-red)](https://min.io)
 
-## 📋 Описание
+## О проекте
 
-REST API для загрузки и управления файлами с поддержкой **двух типов хранилищ**: локальная файловая система и S3-совместимое облако (MinIO). Проект демонстрирует современные практики разработки бэкенда: абстракцию хранилищ, JWT-аутентификацию с ротацией refresh-токенов, транзакции, пагинацию, централизованную обработку ошибок и контейнеризацию.
+**FileFlow Hub** — это REST API для загрузки, хранения и управления файлами с поддержкой **двух типов хранилищ**:
+- **локальная файловая система**
+- **S3-совместимое облако (MinIO)**
+
+Проект показывает хорошие практики backend-разработки: абстракцию хранилищ, JWT-аутентификацию с refresh-токенами, транзакции, пагинацию, централизованную обработку ошибок и контейнеризацию.
 
 ---
 
-## 🏗️ Архитектура
+## Возможности
+
+### Хранилище
+- Абстракция через `StorageInterface`
+- Локальное хранилище `LocalStorage`
+- S3-совместимое хранилище `S3Storage`
+- Переключение драйвера через `.env`
+- Поле `storageType` в БД для каждого файла
+
+### Аутентификация и безопасность
+- Регистрация и вход по JWT
+- Refresh-токены с ротацией
+- `HttpOnly` cookies
+- Автообновление access-токена на клиенте
+- Разные сроки жизни токенов
+- Транзакции Sequelize при удалении файлов
+
+### Работа с файлами
+- Загрузка через Multer
+- Валидация типа, размера и имени файла
+- Привязка файлов к пользователю
+- Мягкое удаление (`paranoid: true`)
+- Пагинация списка файлов
+- Просмотр (`inline`) и скачивание (`attachment`)
+
+### Дополнительно
+- Централизованная обработка ошибок
+- Логирование для dev/prod
+- Валидация UUID
+- Миграции Sequelize
+- Поддержка CORS
+- Демо-клиент на HTML + JS
+
+---
+
+## Архитектура проекта
+
+```text
 src/
-├── config/ # Конфигурации (БД, хранилища)
-├── controllers/ # Обработчики запросов
-├── middleware/ # JWT-аутентификация, обработка ошибок
-├── models/ # Sequelize модели
-├── routes/ # Маршруты API
-├── services/ # Бизнес-логика
-├── storage/ # Абстракция хранилищ
-│ ├── interfaces/ # StorageInterface
-│ ├── drivers/ # LocalStorage, S3Storage
-│ └── index.js # Фабрика драйверов
-└── utils/ # Логгер, валидация, кастомные ошибки
-
-
----
-
-## ✨ Основные возможности
-
-### 📦 Хранилище
-- ✅ **Абстракция через `StorageInterface`** — легко добавить новый тип хранилища
-- ✅ **Локальное хранилище** (`LocalStorage`) — файлы на диске
-- ✅ **S3-совместимое хранилище** (`S3Storage`) — MinIO (локальное облако)
-- ✅ **Фабрика драйверов** — переключение между хранилищами через `.env`
-- ✅ **Поле `storageType` в БД** — каждый файл знает, где лежит
-
-### 🔐 Аутентификация и безопасность
-- ✅ **Регистрация и вход** (JWT)
-- ✅ **Refresh-токены с ротацией** — старый токен удаляется при использовании
-- ✅ **HttpOnly cookies** — защита от XSS
-- ✅ **Автоматическое обновление access-токена** на клиенте
-- ✅ **Разные сроки жизни**: access — 1 мин (для теста), refresh — 30 дней
-- ✅ **Sequelize-транзакции** при удалении файлов
-
-### 📁 Файлы
-- ✅ **Загрузка через Multer** (валидация типа, размера, очистка имени)
-- ✅ **Привязка файлов к пользователю**
-- ✅ **Мягкое удаление** (`paranoid: true`)
-- ✅ **Пагинация** списка файлов
-- ✅ **Два режима отдачи**: просмотр (`inline`) и скачивание (`attachment`)
-
-### 🧩 Дополнительно
-- ✅ **Централизованная обработка ошибок** с кастомными классами
-- ✅ **Логирование** (с разделением dev/prod)
-- ✅ **Валидация UUID**
-- ✅ **Миграции Sequelize**
-- ✅ **Поддержка CORS**
-- ✅ **Готовый фронтенд-клиент** (HTML+JS) для демонстрации
+├── config/                # Конфигурации БД и хранилищ
+├── controllers/           # Обработчики HTTP-запросов
+├── middleware/            # JWT, обработка ошибок и др.
+├── models/                # Sequelize-модели
+├── routes/                # API-маршруты
+├── services/              # Бизнес-логика
+├── storage/
+│   ├── interfaces/        # StorageInterface
+│   ├── drivers/           # LocalStorage, S3Storage
+│   └── index.js           # Фабрика драйверов
+└── utils/                 # Логгер, валидация, кастомные ошибки
+```
 
 ---
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
-## 1. Клонирование
+### 1. Клонирование репозитория
+
+```bash
 git clone https://github.com/yourusername/fileflow-hub.git
 cd fileflow-hub
+```
 
-## 2. Установка зависимостей
+### 2. Установка зависимостей
+
+```bash
 npm install
+```
 
-## 3. Настройка окружения
-Создайте файл .env из примера:
+### 3. Настройка окружения
+
+Создайте `.env` из шаблона:
+
+```bash
 cp .env.example .env
-Отредактируйте .env под ваши параметры:
+```
 
-### Server
+Пример конфигурации:
+
+```env
+# Server
 PORT=3000
 NODE_ENV=development
 
-### Database
+# Database
 DB_NAME=fileflow_hub
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_HOST=localhost
 DB_PORT=5432
 
-### Auth
+# Auth
 SECRET_KEY=your_super_secret_key_change_me
 
-### Storage
-STORAGE_DRIVER=local  # или 's3' для MinIO
+# Storage
+STORAGE_DRIVER=local
+# или s3 для MinIO
 
-### MinIO (если используете S3)
+# MinIO
 MINIO_ENDPOINT=http://localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=my-bucket
+```
 
-## 4. Запуск PostgreSQL и MinIO (через Docker)
-### PostgreSQL
-docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15
+### 4. Запуск PostgreSQL и MinIO через Docker
 
-### MinIO (для S3-режима)
-docker run -d --name minio -p 9000:9000 -p 9001:9001 \
+#### PostgreSQL
+
+```bash
+docker run -d --name postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  postgres:15
+```
+
+#### MinIO
+
+```bash
+docker run -d --name minio \
+  -p 9000:9000 \
+  -p 9001:9001 \
   -e "MINIO_ROOT_USER=minioadmin" \
   -e "MINIO_ROOT_PASSWORD=minioadmin" \
   minio/minio server /data --console-address ":9001"
+```
 
-## 5. Миграции БД
+### 5. Применение миграций
+
+```bash
 npx sequelize-cli db:migrate
+```
 
-## 6. Запуск сервера
+### 6. Запуск сервера
+
+```bash
 npm start
-Сервер будет доступен на http://localhost:3000.
+```
 
-## 7. Запуск фронтенд-демо
-Откройте файл frontend/index.html в браузере (или через Live Server).
+Сервер будет доступен по адресу:
 
+```text
+http://localhost:3000
+```
 
-📚 API Endpoints
-Аутентификация
-Метод	Путь	Описание
-POST	/api/auth/register	Регистрация
-POST	/api/auth/login	Вход (устанавливает httpOnly cookie)
-POST	/api/auth/refresh	Обновление access-токена
-POST	/api/auth/logout	Выход (удаляет cookie)
-Файлы
-Метод	Путь	Описание
-POST	/api/files?storage=local/s3	Загрузка файла
-GET	/api/files	Список файлов (с пагинацией)
-GET	/api/files/:uuid	Просмотр файла
-GET	/api/files/:uuid/download	Скачивание файла
-DELETE	/api/files/:uuid	Удаление файла
-🛠️ Технологии
-Node.js + Express — сервер
+### 7. Запуск demo frontend
 
-PostgreSQL + Sequelize — база данных
+Откройте файл `frontend/index.html` в браузере или через Live Server.
 
-JWT + bcrypt — аутентификация
+---
 
-Multer — загрузка файлов
+## API Endpoints
 
-MinIO — S3-совместимое хранилище
+### Аутентификация
 
-Docker — контейнеризация MinIO и PostgreSQL
+| Метод | Путь | Описание |
+|---|---|---|
+| `POST` | `/api/auth/register` | Регистрация |
+| `POST` | `/api/auth/login` | Вход и установка `HttpOnly` cookie |
+| `POST` | `/api/auth/refresh` | Обновление access-токена |
+| `POST` | `/api/auth/logout` | Выход и удаление cookie |
 
-Sequelize CLI — миграции
+### Файлы
 
-🧠 Ключевые решения в коде
-🔄 Абстракция хранилища
-// storage/index.js — фабрика драйверов
+| Метод | Путь | Описание |
+|---|---|---|
+| `POST` | `/api/files?storage=local/s3` | Загрузка файла |
+| `GET` | `/api/files` | Список файлов с пагинацией |
+| `GET` | `/api/files/:uuid` | Просмотр файла |
+| `GET` | `/api/files/:uuid/download` | Скачивание файла |
+| `DELETE` | `/api/files/:uuid` | Удаление файла |
+
+---
+
+## Стек технологий
+
+- **Node.js + Express** — сервер
+- **PostgreSQL + Sequelize** — база данных
+- **JWT + bcrypt** — аутентификация
+- **Multer** — загрузка файлов
+- **MinIO** — S3-совместимое хранилище
+- **Docker** — контейнеризация сервисов
+- **Sequelize CLI** — миграции
+
+---
+
+## Ключевые решения
+
+### Абстракция хранилища
+
+```js
+// storage/index.js
 const storage = getStorageByType(file.storageType);
 await storage.save(file, savedFile);
+```
 
-🔐 Безопасные refresh-токены
-// httpOnly cookie + ротация
+### Безопасные refresh-токены
+
+```js
 res.cookie("refreshToken", newRefreshToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000
+  httpOnly: true,
+  sameSite: "lax",
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 });
+```
 
-🧩 Централизованная обработка ошибок
-// errorHandler.js — единый формат ответа
+### Централизованная обработка ошибок
+
+```json
 {
-    success: false,
-    error: {
-        code: 404,
-        message: "Файл не найден",
-        type: "NotFoundError"
-    }
+  "success": false,
+  "error": {
+    "code": 404,
+    "message": "Файл не найден",
+    "type": "NotFoundError"
+  }
 }
+```
 
-🔁 Автоматическое обновление токена на клиенте
-// frontend/script.js — fetchWithAuth
+### Автообновление токена на клиенте
+
+```js
 if (response.status === 401) {
-    const newToken = await refreshToken();
-    // повтор запроса с новым токеном
+  const newToken = await refreshToken();
+  // повтор запроса с новым токеном
 }
+```
 
-📦 Возможные улучшения
-Роли пользователей (admin/user)
+---
 
-Ограничение доступа к файлам (владелец/админ)
+## Что можно улучшить
 
-Загрузка нескольких файлов одновременно
+- Роли пользователей (`admin/user`)
+- Разграничение доступа к файлам
+- Загрузка нескольких файлов одновременно
+- WebSocket для прогресса загрузки
+- Тесты на `Jest` + `Supertest`
+- Swagger / OpenAPI документация
+- Деплой в облако
 
-WebSocket для прогресса загрузки
+---
 
-Тесты (Jest + Supertest)
+## Автор
 
-Swagger-документация
+**Ruslan Trafimovich**
 
-Деплой на облачный хостинг
+GitHub: `@GruantR`
 
-👨‍💻 Автор
-Ruslan Trafimovich
-GitHub: @GruantR
+Проект создан в учебных целях для демонстрации навыков backend-разработки.
 
-Проект создан в учебных целях для демонстрации навыков бэкенд-разработки.
