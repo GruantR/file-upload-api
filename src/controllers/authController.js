@@ -70,16 +70,33 @@ class authController {
         refreshToken: newRefreshToken,
         user,
       } = tokensAndUser;
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+      res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
       res.status(200).json({
         success: true,
         message: "Токены успешно обновлены",
         data: { accessToken, user },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+async logout(req, res, next) {
+    try {
+      const refreshToken = req.cookies.refreshToken;
+      await authService.logout(refreshToken);
+
+      // 👇 ЭТО КЛЮЧЕВАЯ СТРОКА 
+      res.clearCookie('refreshToken');
+
+      res.json({
+        success: true,
+        message: "Выход выполнен",
       });
     } catch (err) {
       next(err);

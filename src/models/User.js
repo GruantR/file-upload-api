@@ -37,6 +37,11 @@ const User = sequelize.define("User", {
             msg: "Пароль должен быть не короче 6 символов",
         }
     }
+  },
+  role: {
+    type: DataTypes.ENUM('user', 'admin'),
+    allowNull: false,
+    defaultValue: 'user'
   }
 },{
      tableName: "users",

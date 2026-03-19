@@ -21,6 +21,7 @@ class authService {
       const user = await User.create({
         email: normalizedEmail,
         password,
+        role: 'user',
       });
       return user;
     } catch (err) {
@@ -42,7 +43,7 @@ class authService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
         const token = jwt.sign({ userUuid: user.uuid }, process.env.SECRET_KEY, {
-      expiresIn: "1m",
+      expiresIn: "15m",
     });
     await RefreshToken.create({
       userId: user.id,
@@ -92,6 +93,12 @@ class authService {
       },
     };
   }
+
+  async logout (refreshToken) {
+    await RefreshToken.destroy({where: {token: refreshToken}});
+    return true;
+  }
+  
 }
 
 module.exports = new authService();

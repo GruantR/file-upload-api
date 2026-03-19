@@ -8,7 +8,7 @@ let currentPage = 0;
 const limit = 5;
 let allFiles = [];
 
-// Флаг, чтобы не зациклиться при обновлении токена
+// Флаг для обновления токена
 let isRefreshing = false;
 let refreshSubscribers = [];
 
@@ -22,12 +22,14 @@ const filesList = document.getElementById('files-list');
 const paginationDiv = document.getElementById('pagination');
 const filterBtns = document.querySelectorAll('.filter-btn');
 
-// Проверяем, есть ли уже активная сессия
-if (currentToken) {
-    console.log('🔑 Токен найден в localStorage');
-    showAppInterface();
-    loadAllFiles();
-}
+// При загрузке страницы проверяем сессию
+document.addEventListener('DOMContentLoaded', () => {
+    if (currentToken) {
+        console.log('🔑 Токен найден в localStorage');
+        showAppInterface();
+        loadAllFiles();
+    }
+});
 
 // Переключение вкладок авторизации
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -54,11 +56,10 @@ filterBtns.forEach(btn => {
 // Универсальная функция для запросов с автоматическим обновлением токена
 async function fetchWithAuth(url, options = {}) {
     console.log('📡 Запрос к:', url);
-    console.log('🔑 Текущий токен:', currentToken ? currentToken.substring(0, 20) + '...' : 'отсутствует');
     
     const headers = {
         ...options.headers,
-        'Authorization': `Bearer ${currentToken}`
+        ...(currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {})
     };
     
     let response = await fetch(url, {
@@ -69,8 +70,8 @@ async function fetchWithAuth(url, options = {}) {
 
     console.log('📨 Статус ответа:', response.status);
 
-    // Если токен истёк (401)
-    if (response.status === 401) {
+    // Если токен истёк (401) и мы не на странице логина
+    if (response.status === 401 && !url.includes('/auth/')) {
         console.log('⚠️ Получен 401, пробуем обновить токен...');
         
         const newToken = await refreshToken();
@@ -91,7 +92,7 @@ async function fetchWithAuth(url, options = {}) {
             console.log('📨 Повторный запрос, статус:', response.status);
         } else {
             console.log('❌ Не удалось обновить токен, выполняем logout');
-            logout();
+            await logout();
             throw new Error('Сессия истекла');
         }
     }
@@ -111,7 +112,6 @@ async function refreshToken() {
     }
 
     isRefreshing = true;
-    console.log('🚀 Начинаем обновление токена...');
     
     try {
         const response = await fetch(`${API_URL}/auth/refresh`, {
@@ -211,23 +211,29 @@ document.getElementById('login-btn').addEventListener('click', async () => {
 // Выход
 async function logout() {
     console.log('🚪 Выход из системы');
+    
     try {
+        // Сначала очищаем на клиенте
+        localStorage.removeItem('token');
+        currentToken = null;
+        currentUser = null;
+        
+        // Прячем интерфейс
+        uploadSection.classList.add('hidden');
+        filesSection.classList.add('hidden');
+        logoutSection.classList.add('hidden');
+        document.querySelector('.auth-section').classList.remove('hidden');
+        
+        // Потом отправляем запрос на сервер
         await fetch(`${API_URL}/auth/logout`, {
             method: 'POST',
             credentials: 'include'
         });
+        
+        console.log('✅ Выход выполнен успешно');
     } catch (err) {
-        console.error('Logout error:', err);
+        console.error('❌ Ошибка при выходе:', err);
     }
-    
-    localStorage.removeItem('token');
-    currentToken = null;
-    currentUser = null;
-    
-    uploadSection.classList.add('hidden');
-    filesSection.classList.add('hidden');
-    logoutSection.classList.add('hidden');
-    document.querySelector('.auth-section').classList.remove('hidden');
 }
 
 document.getElementById('logout-btn').addEventListener('click', logout);
@@ -285,7 +291,6 @@ async function loadAllFiles() {
         if (data.success) {
             allFiles = data.files;
             displayCurrentPage();
-            updatePaginationInfo();
         } else {
             filesList.innerHTML = 'Ошибка загрузки списка';
         }
@@ -407,20 +412,29 @@ function goToPage(page) {
     displayCurrentPage();
 }
 
-function updatePaginationInfo() {
-    displayCurrentPage();
-}
-
 // Глобальные функции
-window.viewFile = (uuid) => {
-    window.open(`${API_URL}/files/${uuid}`, '_blank');
+window.viewFile = async (uuid) => {
+    const res = await fetch(`${API_URL}/files/${uuid}`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` },
+        credentials: 'include'
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
 };
 
-window.downloadFile = (uuid, name) => {
+window.downloadFile = async (uuid, name) => {
+    const res = await fetch(`${API_URL}/files/${uuid}/download`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` },
+        credentials: 'include'
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = `${API_URL}/files/${uuid}/download`;
-    a.setAttribute('download', name);
+    a.href = url;
+    a.download = name;
     a.click();
+    URL.revokeObjectURL(url);
 };
 
 window.deleteFile = async (uuid) => {

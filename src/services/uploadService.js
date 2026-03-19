@@ -6,15 +6,15 @@ const path = require("path");
 const fs = require("fs").promises;
 const logger = require("../utils/logger");
 const uploadConfig = require("../config/upload");
-const {getStorageByType, getStorage} = require("../storage/index");
-const {NotFoundError} = require('../utils/errors');
+const { getStorageByType, getStorage } = require("../storage/index");
+const { NotFoundError } = require("../utils/errors");
 
 class UploadService {
   async saveFile(file, userId, storageOption) {
     try {
-      const storageType = storageOption === 's3' ? 's3Storage' : 'localStorage';
+      const storageType = storageOption === "s3" ? "s3Storage" : "localStorage";
       const storage = getStorageByType(storageType);
-      
+
       const savedFile = await File.create({
         fileName: file.filename,
         userId: userId,
@@ -22,7 +22,7 @@ class UploadService {
         size: file.size,
         mimetype: file.mimetype,
         extension: path.extname(file.originalname).replace(".", ""),
-        storageType: storageType
+        storageType: storageType,
       });
       await storage.save(file, savedFile);
       return savedFile;
@@ -43,11 +43,13 @@ class UploadService {
     }
   }
 
-  async getAllFiles(limit, offset) {
+  async getAllFiles(limit, offset, isAdmin, userId) {
     try {
+      const where = isAdmin ? {} : { userId };
       const allFiles = await File.findAll({
-        limit: limit,
-        offset: offset,
+        where,
+        limit,
+        offset,
         order: [["createdAt", "DESC"]],
       });
       const total = await File.count();
@@ -59,7 +61,7 @@ class UploadService {
   async deleteFile(uuid, storageType) {
     let transaction;
     const storage = getStorageByType(storageType);
-   
+
     try {
       transaction = await sequelize.transaction();
       const getFile = await File.findOne({
