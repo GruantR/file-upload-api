@@ -7,7 +7,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const fileValidator = require('../validatorsExpress/fileValidatorExpress');
 const validate = require('../middleware/validateExpress');
 
-router.post("/", authMiddleware, fileValidator.fileRequiredValidation(), fileValidator.uploadFileValidation(), validate, upload.single("file"), uploadController.uploadFile);
+router.post("/", authMiddleware, upload.single("file"), fileValidator.fileRequiredValidation(), fileValidator.uploadFileValidation(), validate, uploadController.uploadFile);
 router.get("/:uuid", authMiddleware, fileValidator.uuidParamValidation(), validate, uploadController.getFile.bind(uploadController));
 router.get("/:uuid/download", authMiddleware, fileValidator.uuidParamValidation(), validate, uploadController.forceDownloadFile.bind(uploadController));
 router.get("/", authMiddleware, fileValidator.paginationValidation(), validate, uploadController.getAllFiles);

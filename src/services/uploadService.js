@@ -6,6 +6,8 @@ const path = require("path");
 const fs = require("fs").promises;
 const logger = require("../utils/logger");
 const uploadConfig = require("../config/upload");
+const redis = require("../config/redis");
+
 const { getStorageByType, getStorage } = require("../storage/index");
 const { NotFoundError } = require("../utils/errors");
 
@@ -25,6 +27,22 @@ class UploadService {
         storageType: storageType,
       });
       await storage.save(file, savedFile);
+      try {
+        // Удаляем кэш этого пользователя
+        const userKeys = await redis.keys(`files:${userId}:*`);
+        if (userKeys.length) {
+          await redis.del(userKeys);
+          logger.info(`🧹 Кэш пользователя ${userId} очищен (новая загрузка)`);
+        }
+        // Удаляем кэш админа (если есть)
+        const adminKeys = await redis.keys("files:admin:*");
+        if (adminKeys.length) {
+          await redis.del(adminKeys);
+          logger.info("🧹 Кэш админа очищен");
+        }
+      } catch (redisError) {
+        logger.error("Ошибка при очистке кэша:", redisError.message);
+      }
       return savedFile;
     } catch (err) {
       throw err;
@@ -45,6 +63,23 @@ class UploadService {
 
   async getAllFiles(limit, offset, isAdmin, userId) {
     try {
+      // Пытаемся использовать Redis
+      const userPart = isAdmin ? "admin" : userId;
+      const cacheKey = `files:${userPart}:offset:${offset}:limit:${limit}`;
+
+      try {
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+          logger.info("📦 Данные из Redis кэша");
+          return JSON.parse(cachedData);
+        }
+      } catch (redisError) {
+        logger.error("Redis error, falling back to DB:", redisError.message);
+        // Просто идём дальше в БД
+      }
+
+      logger.info("🔄 Данных нет в кэше или Redis недоступен, идём в БД");
+
       const where = isAdmin ? {} : { userId };
       const allFiles = await File.findAll({
         where,
@@ -53,11 +88,22 @@ class UploadService {
         order: [["createdAt", "DESC"]],
       });
       const total = await File.count();
-      return { allFiles, total };
-    } catch (err) {
-      throw err;
+      const result = { allFiles, total };
+
+      // Пытаемся сохранить в Redis, но не критично
+      try {
+        await redis.setex(cacheKey, 300, JSON.stringify(result));
+      } catch (redisError) {
+        logger.error("Failed to save to Redis:", redisError.message);
+      }
+
+      return result;
+    } catch (dbError) {
+      // Ошибка БД — это критично
+      throw dbError;
     }
   }
+
   async deleteFile(uuid, storageType) {
     let transaction;
     const storage = getStorageByType(storageType);
@@ -91,6 +137,23 @@ class UploadService {
           errorMessage: unlinkError.message,
           status: "pending",
         });
+      }
+      const userId = getFile.userId;
+      try {
+        // Удаляем кэш этого пользователя
+        const userKeys = await redis.keys(`files:${userId}:*`);
+        if (userKeys.length) {
+          await redis.del(userKeys);
+          logger.info(`🧹 Кэш пользователя ${userId} очищен (новая загрузка)`);
+        }
+        // Удаляем кэш админа (если есть)
+        const adminKeys = await redis.keys("files:admin:*");
+        if (adminKeys.length) {
+          await redis.del(adminKeys);
+          logger.info("🧹 Кэш админа очищен");
+        }
+      } catch (redisError) {
+        logger.error("Ошибка при очистке кэша:", redisError.message);
       }
 
       return {
