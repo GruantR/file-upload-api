@@ -13,4 +13,5 @@ router.get("/:uuid/download", authMiddleware, fileValidator.uuidParamValidation(
 router.get("/", authMiddleware, fileValidator.paginationValidation(), validate, uploadController.getAllFiles);
 router.delete("/:uuid", authMiddleware, fileValidator.uuidParamValidation(), validate, uploadController.deleteFile.bind(uploadController));
 
+
 module.exports = router;
