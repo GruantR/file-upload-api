@@ -169,6 +169,7 @@ class UploadService {
       throw err;
     }
   }
-}
+};
+
 
 module.exports = new UploadService();
