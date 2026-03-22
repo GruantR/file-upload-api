@@ -1,6 +1,9 @@
+//src/config/multer.js
 const multer = require("multer");
 const path = require("path");
-const UPLOAD_DIR = "./uploads";
+const os = require('os');
+//const UPLOAD_DIR = "./uploads";
+
 
 const allowedTypes = {
   "image/jpeg": [".jpg", ".jpeg"],
@@ -10,9 +13,14 @@ const allowedTypes = {
 };
 
 const storage = multer.diskStorage({
+  // destination: (req, file, callback) => {
+  //   callback(null, UPLOAD_DIR); // ← выбранная папка хранения
+  // },
+
   destination: (req, file, callback) => {
-    callback(null, UPLOAD_DIR);
+    callback(null, os.tmpdir()); // ← системная временная папка
   },
+  
   filename: (req, file, callback) => {
     const extension = path.extname(file.originalname).toLowerCase();
     const basename = path.basename(file.originalname, extension);

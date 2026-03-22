@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileFlow Hub — демо</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📁 FileFlow Hub</h1>
+        <p>Демонстрация API загрузки файлов (локально / MinIO)</p>
+
+        <!-- Форма входа / регистрации -->
+        <div class="auth-section card">
+            <h2>🔐 Авторизация</h2>
+            <div class="auth-tabs">
+                <button class="tab-btn active" data-tab="login">Вход</button>
+                <button class="tab-btn" data-tab="register">Регистрация</button>
+            </div>
+            <div id="login-form" class="auth-form active">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Пароль" required>
+                <button id="login-btn">Войти</button>
+            </div>
+            <div id="register-form" class="auth-form">
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Пароль (мин. 6 симв.)" required>
+                <button id="register-btn">Зарегистрироваться</button>
+            </div>
+        </div>
+
+        <!-- Загрузка файла (доступна только после входа) -->
+        <div class="upload-section card hidden" id="upload-section">
+            <h2>📤 Загрузить файл</h2>
+            
+            <!-- Блок выбора хранилища -->
+            <div class="storage-selector">
+                <label class="storage-option">
+                    <input type="radio" name="storage" value="local" checked> 
+                    <span class="radio-label">📁 Локально</span>
+                </label>
+                <label class="storage-option">
+                    <input type="radio" name="storage" value="s3"> 
+                    <span class="radio-label">☁️ Облако (MinIO)</span>
+                </label>
+            </div>
+
+            <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,application/pdf">
+            <button id="upload-btn">Загрузить</button>
+            <div class="progress hidden" id="upload-progress">Загрузка...</div>
+        </div>
+
+        <!-- Кнопка выхода -->
+        <div class="logout-section hidden" id="logout-section">
+            <button id="logout-btn" class="logout-btn">Выйти</button>
+        </div>
+
+        <!-- Фильтры по типу хранилища -->
+        <div class="files-section card hidden" id="files-section">
+            <div class="filter-tabs">
+                <button class="filter-btn active" data-filter="all">Все файлы</button>
+                <button class="filter-btn" data-filter="local">📁 Локальные</button>
+                <button class="filter-btn" data-filter="s3">☁️ Облачные</button>
+            </div>
+            <div id="files-list">Загрузите файл или войдите в систему</div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

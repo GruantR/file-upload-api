@@ -1,4 +1,5 @@
 //src/models/File.js
+const { type } = require("express/lib/response");
 const sequelize = require("../config/database");
 const { DataTypes } = require("sequelize");
 
@@ -11,6 +12,15 @@ const File = sequelize.define(
       unique: true,
       primaryKey: true,
       autoIncrement: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notNull: {
+          msg: "User ID обязателен",
+        },
+      },
     },
     //(дополнительный уникальный идентификатор)
     uuid: {
@@ -41,22 +51,22 @@ const File = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    //(путь к файлу на сервере)
-    path: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     //(".png", ".jpg" и т.д.)
     extension: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: { isLowercase: true },
     },
+    storageType: {
+      type: DataTypes.ENUM('localStorage', 's3Storage'),
+      allowNull: false,
+      defaultValue: 'localStorage'
+    }
   },
   {
     tableName: "files",
     timestamps: true,
-    paranoid: true,
+    paranoid: true, // мягкое удаление
     indexes: [
       {
         unique: true,
