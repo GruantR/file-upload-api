@@ -32,6 +32,13 @@ router.get(
   validate,
   uploadController.getAllFiles,
 );
+router.get(
+  "/:uuid/download",
+  authMiddleware,
+  fileValidator.uuidParamValidation(),
+  validate,
+  uploadController.forceDownloadFile.bind(uploadController),
+);
 router.delete(
   "/:uuid",
   authMiddleware,
