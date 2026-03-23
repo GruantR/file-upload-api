@@ -56,6 +56,7 @@ filterBtns.forEach(btn => {
 // Универсальная функция для запросов с автоматическим обновлением токена
 async function fetchWithAuth(url, options = {}) {
     console.log('📡 Запрос к:', url);
+    console.log('🔑 Токен:', currentToken ? currentToken.substring(0, 20) + '...' : 'отсутствует');
     
     const headers = {
         ...options.headers,
@@ -412,29 +413,37 @@ function goToPage(page) {
     displayCurrentPage();
 }
 
-// Глобальные функции
+// Глобальные функции с использованием fetchWithAuth
 window.viewFile = async (uuid) => {
-    const res = await fetch(`${API_URL}/files/${uuid}`, {
-        headers: { 'Authorization': `Bearer ${currentToken}` },
-        credentials: 'include'
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    try {
+        const res = await fetchWithAuth(`${API_URL}/files/${uuid}`, {
+            method: 'GET'
+        });
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+    } catch (err) {
+        console.error('Ошибка просмотра файла:', err);
+        alert('Не удалось открыть файл');
+    }
 };
 
 window.downloadFile = async (uuid, name) => {
-    const res = await fetch(`${API_URL}/files/${uuid}/download`, {
-        headers: { 'Authorization': `Bearer ${currentToken}` },
-        credentials: 'include'
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+        const res = await fetchWithAuth(`${API_URL}/files/${uuid}/download`, {
+            method: 'GET'
+        });
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('Ошибка скачивания файла:', err);
+        alert('Не удалось скачать файл');
+    }
 };
 
 window.deleteFile = async (uuid) => {

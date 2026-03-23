@@ -18,7 +18,7 @@ class fileRoutesValidation {
     return [
       query("limit")
         .optional()
-        .isInt({ min: 1, max: 100 })
+        .isInt({ min: 1, max: 1000 })
         .withMessage("limit должен быть числом от 1 до 100"),
 
       query("offset")
