@@ -12,7 +12,7 @@ class UploadController {
       const savedFile = await UploadService.saveFile(
         req.file,
         req.user.id,
-        req.query.storage,
+        req.query.storage
       );
       return res.json({
         success: true,
@@ -32,7 +32,7 @@ class UploadController {
 
   async _getFileAndStorage(uuid) {
     if (!isValidUUID(uuid)) {
-      throw new ValidationError("Неверный формат UUID");
+      throw new ValidationError("Invalid UUID format");
     }
     const getFile = await UploadService.getFileByUuid(uuid);
     const storage = getStorageByType(getFile.storageType);
@@ -46,20 +46,19 @@ class UploadController {
 
       const { storage, getFile } = await this._getFileAndStorage(uuid);
       if (userId !== getFile.userId && req.user.role !== "admin") {
-        throw new ForbiddenError("Доступ запрещён");
+        throw new ForbiddenError("Access denied");
       }
       if (storage.constructor.name === "S3Storage") {
-        //Узнаём, какой класс у storage
         const stream = await storage.getStream(getFile.fileName);
         if (!stream) {
-          throw new Error("Не удалось получить поток файла из S3");
+          throw new Error("Failed to get file stream from S3");
         }
         res.setHeader("Content-Type", getFile.mimetype);
         res.setHeader(
           "Content-Disposition",
-          `inline; filename="${getFile.originalName}"`,
+          `inline; filename="${getFile.originalName}"`
         );
-        stream.pipe(res); // Направляет поток из MinIO прямо в ответ клиенту
+        stream.pipe(res);
       } else {
         const absolutePath = await storage.getPath(getFile.fileName);
         res.sendFile(absolutePath);
@@ -75,14 +74,14 @@ class UploadController {
       const userId = req.user.id;
       const { storage, getFile } = await this._getFileAndStorage(uuid);
       if (userId !== getFile.userId && req.user.role !== "admin") {
-        throw new ForbiddenError("Доступ запрещён");
+        throw new ForbiddenError("Access denied");
       }
       if (storage.constructor.name === "S3Storage") {
         const stream = await storage.getStream(getFile.fileName);
         res.setHeader("Content-Type", getFile.mimetype);
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="${getFile.originalName}"`,
+          `attachment; filename="${getFile.originalName}"`
         );
         stream.pipe(res);
       } else {
@@ -107,7 +106,7 @@ class UploadController {
         limit,
         offset,
         isAdmin,
-        userId,
+        userId
       );
       const formattedFiles = allFiles.map((item) => ({
         id: item.id,
@@ -140,11 +139,11 @@ class UploadController {
       const userId = req.user.id;
       const { storage, getFile } = await this._getFileAndStorage(uuid);
       if (userId !== getFile.userId && req.user.role !== "admin") {
-        throw new ForbiddenError("Доступ запрещён");
+        throw new ForbiddenError("Access denied");
       }
       const deleteFile = await UploadService.deleteFile(
         uuid,
-        getFile.storageType,
+        getFile.storageType
       );
       res.json({
         success: true,

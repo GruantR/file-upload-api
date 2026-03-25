@@ -1,21 +1,20 @@
-//src/controllers/authController.js
-
+// src/controllers/authController.js
 const authService = require("../services/authService");
 const { ValidationError, UnauthorizedError } = require("../utils/errors");
 
-class authController {
+class AuthController {
   async createUser(req, res, next) {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
-        throw new ValidationError("Email и пароль обязательны!");
+        throw new ValidationError("Email and password are required");
       }
       const createdUser = await authService.createUser({ email, password });
       const userJSON = createdUser.toJSON();
       const { password: pwd, ...userWithoutPassword } = userJSON;
       return res.status(201).json({
         success: true,
-        message: "Пользователь успешно зарегистрирован",
+        message: "User successfully registered",
         data: userWithoutPassword,
       });
     } catch (err) {
@@ -27,7 +26,7 @@ class authController {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
-        throw new ValidationError("Email и пароль обязательны!");
+        throw new ValidationError("Email and password are required");
       }
       const userAgent = req.headers["user-agent"];
       const tokensAndUser = await authService.authenticateUser({
@@ -36,16 +35,15 @@ class authController {
         userAgent,
       });
       const { accessToken, refreshToken, user } = tokensAndUser;
-      //Устанавливаем httpOnly куку с refresh-токеном
       res.cookie("refreshToken", refreshToken, {
-        httpOnly: true, // ❌ Недоступно из JavaScript (защита от XSS)
-        secure: process.env.NODE_ENV === "production", // true только в production (HTTPS)
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней в миллисекундах
+        maxAge: 30 * 24 * 60 * 60 * 1000,
       });
       res.status(200).json({
         success: true,
-        message: "Успешный вход в систему",
+        message: "Login successful",
         data: { accessToken, user },
       });
     } catch (err) {
@@ -57,19 +55,15 @@ class authController {
     try {
       const refreshToken = req.cookies.refreshToken;
       if (!refreshToken) {
-        throw new UnauthorizedError("Refresh token отсутствует");
+        throw new UnauthorizedError("Refresh token missing");
       }
 
       const userAgent = req.headers["user-agent"];
       const tokensAndUser = await authService.refreshTokens(
         refreshToken,
-        userAgent,
+        userAgent
       );
-      const {
-        accessToken,
-        refreshToken: newRefreshToken,
-        user,
-      } = tokensAndUser;
+      const { accessToken, refreshToken: newRefreshToken, user } = tokensAndUser;
       res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -78,7 +72,7 @@ class authController {
       });
       res.status(200).json({
         success: true,
-        message: "Токены успешно обновлены",
+        message: "Tokens successfully refreshed",
         data: { accessToken, user },
       });
     } catch (err) {
@@ -86,17 +80,14 @@ class authController {
     }
   }
 
-async logout(req, res, next) {
+  async logout(req, res, next) {
     try {
       const refreshToken = req.cookies.refreshToken;
       await authService.logout(refreshToken);
-
-      // 👇 ЭТО КЛЮЧЕВАЯ СТРОКА 
-      res.clearCookie('refreshToken');
-
+      res.clearCookie("refreshToken");
       res.json({
         success: true,
-        message: "Выход выполнен",
+        message: "Logout successful",
       });
     } catch (err) {
       next(err);
@@ -104,4 +95,4 @@ async logout(req, res, next) {
   }
 }
 
-module.exports = new authController();
+module.exports = new AuthController();

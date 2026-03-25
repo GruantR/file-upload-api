@@ -1,36 +1,40 @@
-//src/validatorsExpress/authValidatorExpress.js
+// src/validatorsExpress/authValidatorExpress.js
 const { body } = require("express-validator");
 
-class authRoutesValidation {
+class AuthRoutesValidation {
   registerValidation() {
     return [
       body("email")
         .notEmpty()
-        .withMessage("Email обязателен")
+        .withMessage("Email is required")
         .isEmail()
-        .withMessage("Некорректный формат email")
+        .withMessage("Invalid email format")
         .normalizeEmail()
         .trim(),
 
       body("password")
         .notEmpty()
-        .withMessage("Пароль обязателен")
+        .withMessage("Password is required")
         .isLength({ min: 6 })
-        .withMessage("Пароль должен быть минимум 6 символов"),
+        .withMessage("Password must be at least 6 characters"),
     ];
   }
+
   loginValidation() {
     return [
       body("email")
         .notEmpty()
-        .withMessage("Email обязателен")
+        .withMessage("Email is required")
         .isEmail()
-        .withMessage("Некорректный формат email")
+        .withMessage("Invalid email format")
         .normalizeEmail()
         .trim(),
 
-      body("password").notEmpty().withMessage("Пароль обязателен"),
+      body("password")
+        .notEmpty()
+        .withMessage("Password is required"),
     ];
   }
 }
-module.exports = new authRoutesValidation();
+
+module.exports = new AuthRoutesValidation();

@@ -1,69 +1,69 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FileFlow Hub — демо</title>
+    <title>FileFlow Hub — Demo</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <h1>📁 FileFlow Hub</h1>
-        <p>Демонстрация API загрузки файлов (локально / MinIO)</p>
+        <p>File upload API demo (Local / MinIO)</p>
 
-        <!-- Форма входа / регистрации -->
+        <!-- Login / Registration Form -->
         <div class="auth-section card">
-            <h2>🔐 Авторизация</h2>
+            <h2>🔐 Authentication</h2>
             <div class="auth-tabs">
-                <button class="tab-btn active" data-tab="login">Вход</button>
-                <button class="tab-btn" data-tab="register">Регистрация</button>
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="register">Register</button>
             </div>
             <div id="login-form" class="auth-form active">
                 <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-password" placeholder="Пароль" required>
-                <button id="login-btn">Войти</button>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button id="login-btn">Login</button>
             </div>
             <div id="register-form" class="auth-form">
                 <input type="email" id="register-email" placeholder="Email" required>
-                <input type="password" id="register-password" placeholder="Пароль (мин. 6 симв.)" required>
-                <button id="register-btn">Зарегистрироваться</button>
+                <input type="password" id="register-password" placeholder="Password (min. 6 characters)" required>
+                <button id="register-btn">Register</button>
             </div>
         </div>
 
-        <!-- Загрузка файла (доступна только после входа) -->
+        <!-- File Upload (visible after login) -->
         <div class="upload-section card hidden" id="upload-section">
-            <h2>📤 Загрузить файл</h2>
-            
-            <!-- Блок выбора хранилища -->
+            <h2>📤 Upload File</h2>
+
+            <!-- Storage Type Selector -->
             <div class="storage-selector">
                 <label class="storage-option">
                     <input type="radio" name="storage" value="local" checked> 
-                    <span class="radio-label">📁 Локально</span>
+                    <span class="radio-label">📁 Local</span>
                 </label>
                 <label class="storage-option">
                     <input type="radio" name="storage" value="s3"> 
-                    <span class="radio-label">☁️ Облако (MinIO)</span>
+                    <span class="radio-label">☁️ Cloud (MinIO)</span>
                 </label>
             </div>
 
             <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,application/pdf">
-            <button id="upload-btn">Загрузить</button>
-            <div class="progress hidden" id="upload-progress">Загрузка...</div>
+            <button id="upload-btn">Upload</button>
+            <div class="progress hidden" id="upload-progress">Uploading...</div>
         </div>
 
-        <!-- Кнопка выхода -->
+        <!-- Logout Button -->
         <div class="logout-section hidden" id="logout-section">
-            <button id="logout-btn" class="logout-btn">Выйти</button>
+            <button id="logout-btn" class="logout-btn">Logout</button>
         </div>
 
-        <!-- Фильтры по типу хранилища -->
+        <!-- File List by Storage Type -->
         <div class="files-section card hidden" id="files-section">
             <div class="filter-tabs">
-                <button class="filter-btn active" data-filter="all">Все файлы</button>
-                <button class="filter-btn" data-filter="local">📁 Локальные</button>
-                <button class="filter-btn" data-filter="s3">☁️ Облачные</button>
+                <button class="filter-btn active" data-filter="all">All Files</button>
+                <button class="filter-btn" data-filter="local">📁 Local</button>
+                <button class="filter-btn" data-filter="s3">☁️ Cloud</button>
             </div>
-            <div id="files-list">Загрузите файл или войдите в систему</div>
+            <div id="files-list">Upload a file or log in</div>
             <div class="pagination" id="pagination"></div>
         </div>
     </div>

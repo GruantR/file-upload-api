@@ -17,7 +17,7 @@ debug: (...args) => {
   }
 },
 warn: (...args) => {
-    console.warn("[WARN]", ...args); // всегда
+    console.warn("[WARN]", ...args); // always
 },
 };
 

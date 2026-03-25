@@ -1,9 +1,8 @@
-//src/models.User.js
+// src/models/User.js
 
 const sequelize = require("../config/database");
 const { DataTypes } = require("sequelize");
 const bcrypt = require("bcrypt");
-
 
 const User = sequelize.define("User", {
   id: {
@@ -24,8 +23,8 @@ const User = sequelize.define("User", {
     allowNull: false,
     unique: true,
     validate: {
-      isEmail: { msg: "Некорректный формат email" },
-      notNull: { msg: "Email обязателен для заполнения" },
+      isEmail: { msg: "Invalid email format" },
+      notNull: { msg: "Email is required" },
     },
   },
   password: {
@@ -34,7 +33,7 @@ const User = sequelize.define("User", {
     validate: {
         len: {
             args: [6,100],
-            msg: "Пароль должен быть не короче 6 символов",
+            msg: "Password must be at least 6 characters",
         }
     }
   },
@@ -53,11 +52,11 @@ const User = sequelize.define("User", {
         }
         },
         beforeUpdate: async(user) => {
-            if(user.changed(password) && user.password){
+            if(user.changed('password') && user.password){
                user.password = await bcrypt.hash(user.password, 10); 
             }
         }
      }
 });
 
-module.exports = User
+module.exports = User;
