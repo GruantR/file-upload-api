@@ -1,5 +1,5 @@
-//src/app.js 
-// создание и настройка Express приложения
+// src/app.js
+// Express application setup and configuration
 
 const express = require("express");
 const errorHandler = require('./middleware/errorHandler');
@@ -7,6 +7,7 @@ const app = express();
 const router = require('./routes/index');
 const cookieParser = require('cookie-parser');
 const FRONTEND_URL = 'http://127.0.0.1:5500';
+const { swaggerUi, specs } = require('./config/swagger');
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', FRONTEND_URL);
@@ -18,12 +19,13 @@ app.use((req, res, next) => {
     }
     next();
 });
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api',router)
+app.use('/api', router);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use(errorHandler);
 
-
-module.exports = app
+module.exports = app;

@@ -14,7 +14,7 @@ const sequelize = new Sequelize(
 );
 
 if (!process.env.DB_NAME || !process.env.DB_USER) {
-  console.error("❌ Отсутствуют переменные окружения для БД");
+  console.error("❌ Missing database environment variables");
   process.exit(1);
 }
 

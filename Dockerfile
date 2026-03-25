@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# Устанавливаем зависимости в зависимости от NODE_ENV
+# Install dependencies based on NODE_ENV
 RUN if [ "$NODE_ENV" = "production" ]; then \
         npm ci --only=production; \
     else \
@@ -15,7 +15,7 @@ COPY . .
 
 EXPOSE 3000
 
-# Запускаем в зависимости от окружения
+# Run based on environment
 CMD if [ "$NODE_ENV" = "production" ]; then \
         npm start; \
     else \

@@ -235,7 +235,6 @@ button:hover {
     background: #c0392b;
 }
 
-/* Улучшенная пагинация */
 .pagination {
     display: flex;
     flex-direction: column;
@@ -294,7 +293,6 @@ button:hover {
     padding: 0 0.25rem;
 }
 
-/* Стили для карточек файлов (из предыдущих обновлений) */
 .files-grid {
     display: grid;
     gap: 1rem;

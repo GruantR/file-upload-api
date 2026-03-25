@@ -1,5 +1,4 @@
-//src/models/File.js
-const { type } = require("express/lib/response");
+// src/models/File.js
 const sequelize = require("../config/database");
 const { DataTypes } = require("sequelize");
 
@@ -18,40 +17,40 @@ const File = sequelize.define(
       allowNull: false,
       validate: {
         notNull: {
-          msg: "User ID обязателен",
+          msg: "User ID is required",
         },
       },
     },
-    //(дополнительный уникальный идентификатор)
+    // additional unique identifier
     uuid: {
       type: DataTypes.UUID,
       allowNull: false,
       unique: true,
       defaultValue: DataTypes.UUIDV4,
     },
-    //уникальное имя файла на диске)
+    // unique file name on disk
     fileName: {
       type: DataTypes.TEXT,
       allowNull: false,
       unique: true,
     },
-    //(оригинальное имя от пользователя)
+    // original name from user
     originalName: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    //(в байтах)
+    // size in bytes
     size: {
       type: DataTypes.INTEGER,
       allowNull: false,
       validate: { min: 1 },
     },
-    //(например, "image/png")
+    // e.g., "image/png"
     mimetype: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    //(".png", ".jpg" и т.д.)
+    // file extension (e.g., ".png", ".jpg")
     extension: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -66,7 +65,7 @@ const File = sequelize.define(
   {
     tableName: "files",
     timestamps: true,
-    paranoid: true, // мягкое удаление
+    paranoid: true,
     indexes: [
       {
         unique: true,

@@ -20,7 +20,7 @@ const CleanupLog = sequelize.define(
         model: 'files',
         key: 'uuid'
       },
-      onDelete: 'CASCADE' // если файл удалён — логи тоже удаляются
+      onDelete: 'CASCADE'
 
     },
     storedName: {

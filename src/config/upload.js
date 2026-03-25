@@ -1,10 +1,10 @@
-//src/config/upload
-/*Это конфигурационный файл, который бужет читать путь из .env, превращать его в абсолютный путь (полный от корня диска), 
- для того чтобы в любом месте проекта мы знали точный путь к папке uploads. 
- process.cwd()	текущая рабочая директория (корень проекта)
- path.resolve()	склеивает пути в абсолютный
- || './uploads'	значение по умолчанию, если нет в .env
- */
+// src/config/upload.js
+/* This configuration file reads the upload path from .env and converts it to an absolute path
+   so that the exact path to the uploads folder is known anywhere in the project.
+   process.cwd() - current working directory (project root)
+   path.resolve() - joins paths into an absolute path
+   || './uploads' - default value if not set in .env
+*/
 
 
  const path = require('path');

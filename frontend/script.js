@@ -1,6 +1,6 @@
 const API_URL = 'http://127.0.0.1:3000/api';
 
-// Состояние приложения
+// App state
 let currentUser = null;
 let currentToken = localStorage.getItem('token');
 let currentFilter = 'all';
@@ -8,11 +8,11 @@ let currentPage = 0;
 const limit = 5;
 let allFiles = [];
 
-// Флаг для обновления токена
+// Token refresh state
 let isRefreshing = false;
 let refreshSubscribers = [];
 
-// Элементы DOM
+// DOM elements
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
 const uploadSection = document.getElementById('upload-section');
@@ -22,27 +22,27 @@ const filesList = document.getElementById('files-list');
 const paginationDiv = document.getElementById('pagination');
 const filterBtns = document.querySelectorAll('.filter-btn');
 
-// При загрузке страницы проверяем сессию
+// Check for existing session on page load
 document.addEventListener('DOMContentLoaded', () => {
     if (currentToken) {
-        console.log('🔑 Токен найден в localStorage');
+        console.log('🔑 Token found in localStorage');
         showAppInterface();
         loadAllFiles();
     }
 });
 
-// Переключение вкладок авторизации
+// Auth tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
+
         document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
         document.getElementById(`${btn.dataset.tab}-form`).classList.add('active');
     });
 });
 
-// Переключение фильтров
+// Filter buttons
 filterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         filterBtns.forEach(b => b.classList.remove('active'));
@@ -53,34 +53,33 @@ filterBtns.forEach(btn => {
     });
 });
 
-// Универсальная функция для запросов с автоматическим обновлением токена
+// Universal fetch with auto token refresh
 async function fetchWithAuth(url, options = {}) {
-    console.log('📡 Запрос к:', url);
-    console.log('🔑 Токен:', currentToken ? currentToken.substring(0, 20) + '...' : 'отсутствует');
-    
+    console.log('📡 Request to:', url);
+    console.log('🔑 Token:', currentToken ? currentToken.substring(0, 20) + '...' : 'missing');
+
     const headers = {
         ...options.headers,
         ...(currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {})
     };
-    
+
     let response = await fetch(url, {
         ...options,
         headers,
         credentials: 'include'
     });
 
-    console.log('📨 Статус ответа:', response.status);
+    console.log('📨 Response status:', response.status);
 
-    // Если токен истёк (401) и мы не на странице логина
     if (response.status === 401 && !url.includes('/auth/')) {
-        console.log('⚠️ Получен 401, пробуем обновить токен...');
-        
+        console.log('⚠️ Received 401, refreshing token...');
+
         const newToken = await refreshToken();
         if (newToken) {
-            console.log('✅ Токен обновлён, повторяем запрос');
+            console.log('✅ Token refreshed, retrying request');
             currentToken = newToken;
             localStorage.setItem('token', currentToken);
-            
+
             const newHeaders = {
                 ...options.headers,
                 'Authorization': `Bearer ${currentToken}`
@@ -90,53 +89,52 @@ async function fetchWithAuth(url, options = {}) {
                 headers: newHeaders,
                 credentials: 'include'
             });
-            console.log('📨 Повторный запрос, статус:', response.status);
+            console.log('📨 Retried request status:', response.status);
         } else {
-            console.log('❌ Не удалось обновить токен, выполняем logout');
+            console.log('❌ Token refresh failed, logging out');
             await logout();
-            throw new Error('Сессия истекла');
+            throw new Error('Session expired');
         }
     }
-    
+
     return response;
 }
 
-// Функция обновления токена
 async function refreshToken() {
-    console.log('🔄 refreshToken() вызван');
-    
+    console.log('🔄 refreshToken() called');
+
     if (isRefreshing) {
-        console.log('⏳ Уже обновляем токен, добавляем в очередь');
+        console.log('⏳ Already refreshing, adding to queue');
         return new Promise(resolve => {
             refreshSubscribers.push(resolve);
         });
     }
 
     isRefreshing = true;
-    
+
     try {
         const response = await fetch(`${API_URL}/auth/refresh`, {
             method: 'POST',
             credentials: 'include'
         });
-        
-        console.log('📨 Ответ от /refresh, статус:', response.status);
-        
+
+        console.log('📨 /refresh response status:', response.status);
+
         if (!response.ok) {
-            throw new Error('Не удалось обновить токен');
+            throw new Error('Failed to refresh token');
         }
-        
+
         const data = await response.json();
-        console.log('✅ Токен успешно обновлён');
-        
+        console.log('✅ Token refreshed successfully');
+
         const newToken = data.data.accessToken;
-        
+
         refreshSubscribers.forEach(cb => cb(newToken));
         refreshSubscribers = [];
-        
+
         return newToken;
     } catch (err) {
-        console.error('❌ Ошибка обновления токена:', err);
+        console.error('❌ Token refresh error:', err);
         refreshSubscribers = [];
         return null;
     } finally {
@@ -144,45 +142,45 @@ async function refreshToken() {
     }
 }
 
-// Регистрация
+// Registration
 document.getElementById('register-btn').addEventListener('click', async () => {
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
-    
+
     if (!email || !password) {
-        alert('Заполните все поля');
+        alert('Please fill in all fields');
         return;
     }
-    
+
     try {
         const res = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await res.json();
         if (data.success) {
-            alert('Регистрация успешна! Теперь войдите.');
+            alert('Registration successful! Please log in.');
             document.querySelector('[data-tab="login"]').click();
         } else {
-            alert('Ошибка: ' + data.error.message);
+            alert('Error: ' + data.error.message);
         }
     } catch (err) {
-        alert('Ошибка соединения');
+        alert('Connection error');
     }
 });
 
-// Вход
+// Login
 document.getElementById('login-btn').addEventListener('click', async () => {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    
+
     if (!email || !password) {
-        alert('Заполните все поля');
+        alert('Please fill in all fields');
         return;
     }
-    
+
     try {
         const res = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
@@ -190,50 +188,50 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             credentials: 'include',
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await res.json();
         if (data.success) {
             currentToken = data.data.accessToken;
             currentUser = data.data.user;
-            
+
             localStorage.setItem('token', currentToken);
-            console.log('✅ Успешный вход, токен сохранён');
-            
+            console.log('✅ Login successful, token saved');
+
             showAppInterface();
             loadAllFiles();
         } else {
-            alert('Ошибка: ' + data.error.message);
+            alert('Error: ' + data.error.message);
         }
     } catch (err) {
-        alert('Ошибка соединения');
+        alert('Connection error');
     }
 });
 
-// Выход
+// Logout
 async function logout() {
-    console.log('🚪 Выход из системы');
-    
+    console.log('🚪 Logging out');
+
     try {
-        // Сначала очищаем на клиенте
+        // Clear client-side first
         localStorage.removeItem('token');
         currentToken = null;
         currentUser = null;
-        
-        // Прячем интерфейс
+
+        // Hide interface
         uploadSection.classList.add('hidden');
         filesSection.classList.add('hidden');
         logoutSection.classList.add('hidden');
         document.querySelector('.auth-section').classList.remove('hidden');
-        
-        // Потом отправляем запрос на сервер
+
+        // Notify server
         await fetch(`${API_URL}/auth/logout`, {
             method: 'POST',
             credentials: 'include'
         });
-        
-        console.log('✅ Выход выполнен успешно');
+
+        console.log('✅ Logout successful');
     } catch (err) {
-        console.error('❌ Ошибка при выходе:', err);
+        console.error('❌ Logout error:', err);
     }
 }
 
@@ -246,61 +244,61 @@ function showAppInterface() {
     document.querySelector('.auth-section').classList.add('hidden');
 }
 
-// Загрузка файла
+// File upload
 document.getElementById('upload-btn').addEventListener('click', async () => {
     const fileInput = document.getElementById('file-input');
     if (!fileInput.files[0]) {
-        alert('Выберите файл');
+        alert('Please select a file');
         return;
     }
-    
+
     const storageType = document.querySelector('input[name="storage"]:checked').value;
-    
+
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
-    
+
     const progress = document.getElementById('upload-progress');
     progress.classList.remove('hidden');
-    
+
     try {
         const res = await fetchWithAuth(`${API_URL}/files?storage=${storageType}`, {
             method: 'POST',
             body: formData
         });
-        
+
         const data = await res.json();
         progress.classList.add('hidden');
-        
+
         if (data.success) {
             fileInput.value = '';
             loadAllFiles();
         } else {
-            alert('Ошибка: ' + data.error.message);
+            alert('Error: ' + data.error.message);
         }
     } catch (err) {
         progress.classList.add('hidden');
-        alert('Ошибка загрузки');
+        alert('Upload error');
     }
 });
 
-// Загрузка всех файлов
+// Load all files from server
 async function loadAllFiles() {
     try {
         const res = await fetchWithAuth(`${API_URL}/files?limit=1000&offset=0`);
-        
+
         const data = await res.json();
         if (data.success) {
             allFiles = data.files;
             displayCurrentPage();
         } else {
-            filesList.innerHTML = 'Ошибка загрузки списка';
+            filesList.innerHTML = 'Error loading file list';
         }
     } catch (err) {
-        filesList.innerHTML = 'Ошибка соединения';
+        filesList.innerHTML = 'Connection error';
     }
 }
 
-// Отображение текущей страницы
+// Display current page with filter
 function displayCurrentPage() {
     let filteredFiles = allFiles;
     if (currentFilter === 'local') {
@@ -308,18 +306,18 @@ function displayCurrentPage() {
     } else if (currentFilter === 's3') {
         filteredFiles = allFiles.filter(f => f.storageType === 's3Storage');
     }
-    
+
     const start = currentPage * limit;
     const end = start + limit;
     const pageFiles = filteredFiles.slice(start, end);
-    
+
     displayFiles(pageFiles);
     displayPagination(filteredFiles.length);
 }
 
 function displayFiles(files) {
     if (files.length === 0) {
-        filesList.innerHTML = '<p class="empty-message">Файлов пока нет</p>';
+        filesList.innerHTML = '<p class="empty-message">No files yet</p>';
         return;
     }
 
@@ -327,8 +325,8 @@ function displayFiles(files) {
     files.forEach(file => {
         const type = file.storageType === 's3Storage' ? 's3' : 'local';
         const icon = type === 'local' ? '📁' : '☁️';
-        const typeLabel = type === 'local' ? 'Локальный' : 'Облачный';
-        
+        const typeLabel = type === 'local' ? 'Local' : 'Cloud';
+
         html += `
             <div class="file-card" data-uuid="${file.uuid}">
                 <div class="file-icon">${icon}</div>
@@ -341,9 +339,9 @@ function displayFiles(files) {
                     </div>
                 </div>
                 <div class="file-actions">
-                    <button class="view-btn" onclick="viewFile('${file.uuid}')" title="Просмотр">👁️</button>
-                    <button class="download-btn" onclick="downloadFile('${file.uuid}', '${file.name}')" title="Скачать">⬇️</button>
-                    <button class="delete-btn" onclick="deleteFile('${file.uuid}')" title="Удалить">🗑️</button>
+                    <button class="view-btn" onclick="viewFile('${file.uuid}')" title="View">👁️</button>
+                    <button class="download-btn" onclick="downloadFile('${file.uuid}', '${file.name}')" title="Download">⬇️</button>
+                    <button class="delete-btn" onclick="deleteFile('${file.uuid}')" title="Delete">🗑️</button>
                 </div>
             </div>
         `;
@@ -358,31 +356,31 @@ function displayPagination(totalFiltered) {
         paginationDiv.innerHTML = '';
         return;
     }
-    
+
     let html = '';
-    
+
     const startRecord = currentPage * limit + 1;
     const endRecord = Math.min((currentPage + 1) * limit, totalFiltered);
-    html += `<div class="pagination-info">📄 ${startRecord}-${endRecord} из ${totalFiltered}</div>`;
-    
+    html += `<div class="pagination-info">📄 ${startRecord}-${endRecord} of ${totalFiltered}</div>`;
+
     html += '<div class="pagination-controls">';
-    
+
     if (currentPage > 0) {
-        html += `<button class="page-btn" onclick="goToPage(0)" title="Первая страница">⏮️</button>`;
+        html += `<button class="page-btn" onclick="goToPage(0)" title="First page">⏮️</button>`;
     }
-    
+
     if (currentPage > 0) {
-        html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})">◀ Пред.</button>`;
+        html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})">◀ Prev</button>`;
     }
-    
+
     const startPage = Math.max(0, currentPage - 2);
     const endPage = Math.min(totalPages - 1, currentPage + 2);
-    
+
     if (startPage > 0) {
         html += `<button class="page-btn" onclick="goToPage(0)">1</button>`;
         if (startPage > 1) html += '<span class="page-dots">...</span>';
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
         if (i === currentPage) {
             html += `<button class="page-btn active" disabled>${i + 1}</button>`;
@@ -390,20 +388,20 @@ function displayPagination(totalFiltered) {
             html += `<button class="page-btn" onclick="goToPage(${i})">${i + 1}</button>`;
         }
     }
-    
+
     if (endPage < totalPages - 1) {
         if (endPage < totalPages - 2) html += '<span class="page-dots">...</span>';
         html += `<button class="page-btn" onclick="goToPage(${totalPages - 1})">${totalPages}</button>`;
     }
-    
+
     if (currentPage < totalPages - 1) {
-        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">След. ▶</button>`;
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">Next ▶</button>`;
     }
-    
+
     if (currentPage < totalPages - 1) {
-        html += `<button class="page-btn" onclick="goToPage(${totalPages - 1})" title="Последняя страница">⏭️</button>`;
+        html += `<button class="page-btn" onclick="goToPage(${totalPages - 1})" title="Last page">⏭️</button>`;
     }
-    
+
     html += '</div>';
     paginationDiv.innerHTML = html;
 }
@@ -413,7 +411,7 @@ function goToPage(page) {
     displayCurrentPage();
 }
 
-// Глобальные функции с использованием fetchWithAuth
+// Global functions with fetchWithAuth
 window.viewFile = async (uuid) => {
     try {
         const res = await fetchWithAuth(`${API_URL}/files/${uuid}`, {
@@ -423,8 +421,8 @@ window.viewFile = async (uuid) => {
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
     } catch (err) {
-        console.error('Ошибка просмотра файла:', err);
-        alert('Не удалось открыть файл');
+        console.error('View error:', err);
+        alert('Could not open file');
     }
 };
 
@@ -441,26 +439,26 @@ window.downloadFile = async (uuid, name) => {
         a.click();
         URL.revokeObjectURL(url);
     } catch (err) {
-        console.error('Ошибка скачивания файла:', err);
-        alert('Не удалось скачать файл');
+        console.error('Download error:', err);
+        alert('Could not download file');
     }
 };
 
 window.deleteFile = async (uuid) => {
-    if (!confirm('Удалить файл?')) return;
-    
+    if (!confirm('Delete file?')) return;
+
     try {
         const res = await fetchWithAuth(`${API_URL}/files/${uuid}`, {
             method: 'DELETE'
         });
-        
+
         const data = await res.json();
         if (data.success) {
             loadAllFiles();
         } else {
-            alert('Ошибка: ' + data.error.message);
+            alert('Error: ' + data.error.message);
         }
     } catch (err) {
-        alert('Ошибка удаления');
+        alert('Delete error');
     }
 };
