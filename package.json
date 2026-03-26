@@ -1,19 +1,19 @@
 {
   "name": "fileflow-hub",
   "version": "1.0.0",
-  "description": "Личный файловый хостинг",
+  "description": "Hybrid file storage with local and S3 support",
   "main": "src/server.js",
   "scripts": {
-  "test": "NODE_ENV=test jest --runInBand --verbose",
-  "test:watch": "NODE_ENV=test jest --watch --verbose",
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "dev": "NODE_ENV=development nodemon src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "test": "NODE_ENV=test jest --runInBand --verbose",
+    "test:watch": "NODE_ENV=test jest --watch --verbose"
   },
-    "jest": {
-  "setupFilesAfterEnv": ["<rootDir>/test/__helpers__/setup.js"]
+  "jest": {
+    "setupFilesAfterEnv": ["<rootDir>/test/__helpers__/setup.js"]
   },
   "keywords": [],
-  "author": "",
+  "author": "Ruslan Trafimovich",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

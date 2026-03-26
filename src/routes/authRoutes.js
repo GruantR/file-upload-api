@@ -97,7 +97,7 @@ const router = express.Router();
  */
 router.post(
   "/register",
-  rateLimiter({ windowMs: 60 * 60 * 1000, max: 100 }),
+  rateLimiter({ windowMs: 60 * 60 * 1000, max: 3 }),
   authValidator.registerValidation(),
   validate,
   authController.createUser
@@ -211,7 +211,7 @@ router.post(
  */
 router.post(
   "/login",
-  rateLimiter({ windowMs: 60 * 1000, max: 100 }),
+  rateLimiter({ windowMs: 60 * 1000, max: 5 }),
   authValidator.loginValidation(),
   validate,
   authController.loginUser
