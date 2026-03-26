@@ -14,7 +14,7 @@ class UploadController {
         req.user.id,
         req.query.storage
       );
-      return res.json({
+      return res.status(201).json({
         success: true,
         file: {
           id: savedFile.id,

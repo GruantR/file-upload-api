@@ -3,6 +3,10 @@ const logger = require("../utils/logger");
 const { ApiError } = require("../utils/errors");
 
 const errorHandler = (err, req, res, next) => {
+    if (process.env.NODE_ENV !== 'test') {
+    logger.error(`${err.statusCode || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+  }
+
   logger.error(
     `${err.statusCode || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`
   );
