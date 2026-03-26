@@ -1,9 +1,13 @@
 // src/middleware/rateLimiter.js
-
 const redis = require("../config/redis");
 const logger = require("../utils/logger");
 
 const rateLimiter = (options = {}) => {
+  // Отключаем rate limiter в тестах
+  if (process.env.NODE_ENV === 'test' || process.env.RATE_LIMIT_ENABLED === 'false') {
+    return (req, res, next) => next();
+  }
+
   const {
     windowMs = 60 * 1000,
     max = 5,
