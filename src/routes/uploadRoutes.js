@@ -101,13 +101,17 @@ router.post(
  *         description: File UUID
  *     responses:
  *       200:
- *         description: File content (image, PDF, etc.)
+ *         description: File content
  *         content:
  *           image/jpeg:
  *             schema:
  *               type: string
  *               format: binary
  *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/gif:
  *             schema:
  *               type: string
  *               format: binary
@@ -121,30 +125,60 @@ router.post(
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: 400
+ *                 message: Invalid UUID format
+ *                 type: ValidationError
  *       401:
  *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/CustomErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: 401
+ *                 message: Authentication required
+ *                 type: UnauthorizedError
  *       403:
- *         description: Access forbidden (not your file and not admin)
+ *         description: Access forbidden
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/CustomErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: 403
+ *                 message: Access denied
+ *                 type: ForbiddenError
  *       404:
  *         description: File not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/CustomErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: 404
+ *                 message: File not found
+ *                 type: NotFoundError
  *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorWithTextResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 code: 500
+ *                 message: Internal server error
+ *                 type: ServerError
  */
 router.get(
   "/:uuid",

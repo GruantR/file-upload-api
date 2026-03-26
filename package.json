@@ -4,9 +4,13 @@
   "description": "Личный файловый хостинг",
   "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+  "test": "NODE_ENV=test jest --runInBand --verbose",
+  "test:watch": "NODE_ENV=test jest --watch --verbose",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
+  },
+    "jest": {
+  "setupFilesAfterEnv": ["<rootDir>/test/__helpers__/setup.js"]
   },
   "keywords": [],
   "author": "",
@@ -31,6 +35,8 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "sequelize-cli": "^6.6.5"
+    "jest": "^30.3.0",
+    "sequelize-cli": "^6.6.5",
+    "supertest": "^7.2.2"
   }
 }
