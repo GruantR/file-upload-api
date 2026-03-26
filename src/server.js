@@ -23,6 +23,7 @@ async function ensureUploadsFolder() {
       throw err;
     }
   }
+  
 }
 
 async function startServer() {
