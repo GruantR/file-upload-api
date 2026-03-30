@@ -1,4 +1,19 @@
-const API_URL = 'http://127.0.0.1:3000/api';
+// API base:
+// - if frontend is opened from backend port (3000) -> same-origin via relative '/api'
+// - otherwise -> fall back to local backend on port 3000
+const API_URL = (() => {
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+
+    if (port === '3000') {
+        return '/api';
+    }
+
+    // For local dev/portfolio demo, backend is exposed on port 3000.
+    // Using explicit host keeps CORS behavior consistent with backend config.
+    const backendHost = hostname === 'localhost' ? 'localhost' : '127.0.0.1';
+    return `http://${backendHost}:3000/api`;
+})();
 
 // App state
 let currentUser = null;

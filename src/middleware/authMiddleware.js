@@ -18,6 +18,9 @@ const authorizeToken = async (req, res, next) => {
     const userFromDecodedToken = await User.findOne({
       where: { uuid: decodedToken.userUuid },
     });
+    if (!userFromDecodedToken) {
+      throw new UnauthorizedError("User not found");
+    }
     req.user = userFromDecodedToken;
     next();
   } catch (err) {

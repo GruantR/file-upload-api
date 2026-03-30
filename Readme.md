@@ -1,129 +1,81 @@
-# 🚀 File Storage Service
+# FileFlow Hub
 
-> **Production-ready backend API for scalable file storage with local and S3-compatible support (MinIO)**
-
----
-
-## 💡 Why This Project Matters
-
-This project demonstrates how to design and build a **real-world file storage backend** similar to services like Google Drive or AWS S3 integrations.
-
-It focuses on production-level concerns:
-- scalable architecture
-- secure authentication flows
-- storage abstraction
-- clean and maintainable codebase
+REST API for file storage with **local disk** or **S3-compatible storage (MinIO)**. Includes a small browser demo UI, JWT auth with refresh cookies, PostgreSQL, Redis, and Docker Compose.
 
 ---
 
-## ✨ Overview
-
-**File Storage Service** is a REST API that allows users to upload, manage, and retrieve files using either:
-
-- Local file system
-- S3-compatible cloud storage (MinIO)
-
-The system is designed with flexibility in mind, allowing storage strategy to be switched dynamically via configuration.
-
----
-
-## 🧠 Architecture Highlights
-
-- Clear separation of concerns (Controller → Service → Storage)
-- Storage abstraction via interface pattern
-- Stateless authentication using JWT
-- Refresh token rotation for session security
-- Database consistency using transactions
-- Environment-based configuration
-
----
-
-## 🔐 Security Highlights
-
-- HttpOnly cookies (protection against XSS)
-- Refresh token rotation (prevents session hijacking)
-- Short-lived access tokens
-- Input validation (files, UUIDs)
-- Centralized error handling (no sensitive data leaks)
-
----
-
-## 🧩 Key Features
-
-### 📦 Storage
-- Pluggable storage system (`StorageInterface`)
-- Local storage driver
-- S3-compatible driver (MinIO)
-- Runtime storage switching via `.env`
-- Per-file storage tracking
-
-### 🔐 Authentication
-- JWT authentication (access + refresh tokens)
-- Secure cookie-based refresh tokens
-- Automatic token renewal
-
-### 📁 File Management
-- File upload with validation
-- User-specific file ownership
-- Soft delete support
-- Pagination
-- File preview and download modes
-
-### ⚙️ Backend
-- Centralized error handling
-- Structured logging (planned)
-- Sequelize ORM + migrations
-- UUID validation
-- CORS support
-
----
-
-## ⚡ Quick Start
+## Quick start (Docker)
 
 ```bash
-git clone https://github.com/yourusername/file-storage-service.git
-cd file-storage-service
+git clone https://github.com/GruantR/fileflow-hub.git
+cd fileflow-hub
 npm install
 cp .env.example .env
-docker-compose up -d
+docker-compose up -d --build
 ```
 
-Run migrations:
+Apply database schema and optional seed (admin user):
+
 ```bash
-docker-compose exec app npx sequelize-cli db:migrate
+docker-compose exec app npm run db:migrate
+docker-compose exec app npm run db:seed
 ```
 
-Seed database:
-```bash
-docker-compose exec app npx sequelize-cli db:seed:all
-```
+> Replace the clone URL with your fork if needed.
 
----
+### URLs
 
-## 🌐 Services
-
-| Service | URL |
-|--------|-----|
+| What | URL |
+|------|-----|
 | API | http://localhost:3000 |
-| Swagger Docs | http://localhost:3000/api-docs |
+| Demo UI (same origin as API) | http://localhost:3000/ |
+| Swagger | http://localhost:3000/api-docs |
+| Health | http://localhost:3000/api/health |
 | MinIO Console | http://localhost:9001 |
 
+On startup the app **creates the MinIO bucket** from `MINIO_BUCKET` if it does not exist (so “Cloud (MinIO)” uploads work after a fresh `docker-compose up`).
+
+### Seed admin (after `db:seed`)
+
+| Field | Value |
+|-------|--------|
+| Email | `admin@example.com` |
+| Password | `admin123` |
+
+Change the password after first login in a real deployment.
+
+### Optional: Live Server (VS Code) for the demo UI
+
+You can open `frontend/index.html` via Live Server (e.g. `http://127.0.0.1:5500/frontend/`). The demo script talks to `http://127.0.0.1:3000/api` when the page is not served from port 3000. Ensure the API is running and CORS allows `http://127.0.0.1:5500` and `http://localhost:5500` (already configured in `src/app.js`).
+
 ---
 
-## 🔌 API Overview
+## Local run without Docker (advanced)
+
+1. Install and run PostgreSQL (port in `.env` must match; example uses `5433` if you map Docker Postgres to host).
+2. Run Redis and MinIO if you use S3 mode.
+3. `cp .env.example .env` and adjust variables.
+4. `npm run db:migrate` and `npm run db:seed`
+5. `npm run dev`
+
+---
+
+## API overview
 
 ### Auth
+
 | Method | Endpoint |
-|------|--------|
+|--------|----------|
 | POST | /api/auth/register |
 | POST | /api/auth/login |
 | POST | /api/auth/refresh |
 | POST | /api/auth/logout |
 
-### Files
+### Files (Bearer access token)
+
 | Method | Endpoint |
-|------|--------|
-| POST | /api/files |
+|--------|----------|
+| POST | /api/files?storage=local \| s3 |
 | GET | /api/files |
 | GET | /api/files/:uuid |
 | GET | /api/files/:uuid/download |
@@ -131,72 +83,26 @@ docker-compose exec app npx sequelize-cli db:seed:all
 
 ---
 
-## 📚 API Documentation
+## Testing
 
-Interactive API documentation is available via Swagger:
+Tests use Jest + Supertest. Load `.env.test` (see `test/__helpers__/setup.js`) and ensure the **test database** exists (e.g. `fileflow_hub_test` on the host/port from `.env.test`).
 
-- Full endpoint descriptions
-- Request/response schemas
-- Authentication flow examples
-- Error handling format
-
----
-
-## 🧪 Testing (Planned)
-
-The project will include:
-
-- Unit tests (Jest)
-- Integration tests (Supertest)
-- Authentication flow testing
-- File upload testing
+```bash
+npm test
+```
 
 ---
 
-## 🛠 Tech Stack
+## Tech stack
 
-- Node.js + Express
-- PostgreSQL + Sequelize
-- JWT + bcrypt
-- Multer
-- MinIO (S3)
-- Redis
-- Docker + Docker Compose
+- Node.js, Express
+- PostgreSQL, Sequelize, sequelize-cli
+- JWT, bcrypt, cookie-parser
+- Multer, Redis (ioredis), MinIO (AWS SDK v3)
+- Docker Compose
 
 ---
 
-## 🧑‍💻 What This Project Demonstrates
+## Author
 
-- Backend architecture design
-- Secure authentication systems
-- File storage abstraction
-- Working with S3-compatible services
-- REST API design best practices
-- Dockerized development workflow
-
----
-
-## 🚧 Roadmap
-
-- Role-based access control
-- Multi-file upload
-- Upload progress tracking (WebSockets)
-- Full test coverage
-- Production logging system
-- Cloud deployment
-
----
-
-## 👨‍💻 Author
-
-**Ruslan Trafimovich**  
-GitHub: @GruantR
-
----
-
-## ⭐ Final Note
-
-This project is designed as a portfolio-ready backend system that reflects real-world engineering practices.
-
-It can serve as a foundation for scalable file storage services or be extended into a full cloud storage platform.
-
+**Ruslan Trafimovich** — GitHub: [@GruantR](https://github.com/GruantR)

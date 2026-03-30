@@ -7,7 +7,9 @@
     "dev": "NODE_ENV=development nodemon src/server.js",
     "start": "NODE_ENV=production node src/server.js",
     "test": "NODE_ENV=test jest --runInBand --verbose",
-    "test:watch": "NODE_ENV=test jest --watch --verbose"
+    "test:watch": "NODE_ENV=test jest --watch --verbose",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:seed": "sequelize-cli db:seed:all"
   },
   "jest": {
     "setupFilesAfterEnv": ["<rootDir>/test/__helpers__/setup.js"]

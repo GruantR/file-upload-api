@@ -105,6 +105,10 @@ class AuthService {
       if (!dbToken) {
         throw new UnauthorizedError("Invalid refresh token");
       }
+      if (dbToken.expiresAt && new Date(dbToken.expiresAt) < new Date()) {
+        await RefreshToken.destroy({ where: { token: refreshToken } });
+        throw new UnauthorizedError("Refresh token expired");
+      }
       tokenData = {
         userId: dbToken.userId,
         userAgent: dbToken.userAgent,
