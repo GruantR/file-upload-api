@@ -23,6 +23,20 @@ docker-compose exec app npm run db:migrate && docker-compose exec app npm run db
 
 Wait ~10-20 seconds for the app to be ready, then verify it:
 
+### Environment variables (Docker-first)
+
+Copy `cp .env.example .env` before starting. In Docker mode defaults are also set in `docker-compose.yml`, but `.env` is used by the app (and is required for “Local run without Docker”).
+
+| Variable | Needed for |
+|---|---|
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | PostgreSQL connection |
+| `DB_DIALECT` | DB dialect (usually `postgres`) |
+| `REDIS_HOST`, `REDIS_PORT` | Redis caching / rate limiting |
+| `SECRET_KEY` | JWT signing key |
+| `STORAGE_DRIVER` | `local` or `s3` |
+| `UPLOADS_PATH` | Where uploaded files are stored on disk |
+| `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` | Required only when `STORAGE_DRIVER=s3` (Cloud / MinIO uploads) |
+
 ### URLs
 
 | What | URL |
@@ -41,12 +55,28 @@ On startup the app **creates the MinIO bucket** from `MINIO_BUCKET` if it does n
 curl -sS http://localhost:3000/api/health
 ```
 
+`curl` flags:
+- `-s` — silent (не печатает “progress”)
+- `-S` — но выводит ошибки, если запрос неуспешный
+
 Example response:
 
 ```json
 {
   "status": "OK",
   "timestamp": "2026-03-30T10:00:00.000Z"
+}
+```
+
+If something is down, response can include diagnostics:
+
+```json
+{
+  "status": "ERROR",
+  "timestamp": "2026-03-30T10:00:00.000Z",
+  "details": {
+    "db": "..."
+  }
 }
 ```
 

@@ -1,8 +1,14 @@
 node_modules
 uploads
 .env
+.env.*
 .git
 .gitignore
 README.md
+.github
+test
+coverage
+.vscode
+.cursor
 .DS_Store
 *.log

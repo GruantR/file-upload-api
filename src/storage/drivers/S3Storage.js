@@ -6,6 +6,7 @@ const StorageInterface = require("../interfaces/StorageInterface");
 const { Upload } = require("@aws-sdk/lib-storage");
 const { S3Client, DeleteObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const fs = require("fs");
+const logger = require("../../utils/logger");
 
 class S3Storage extends StorageInterface {
   constructor() {
@@ -38,7 +39,7 @@ class S3Storage extends StorageInterface {
       },
     });
 
-    console.log("⏳ Starting upload to MinIO...");
+    logger.debug("Starting upload to MinIO...");
 
     // 3. Upload (waits for completion)
     await upload.done();
