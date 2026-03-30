@@ -3,7 +3,7 @@ const path = require("path");
 const UploadService = require("../services/uploadService");
 const isValidUUID = require("../utils/validationUUID");
 const uploadConfig = require("../config/upload");
-const { getStorageByType, getStorage } = require("../storage/index");
+const { getStorageByType } = require("../storage/index");
 const { ValidationError, ForbiddenError } = require("../utils/errors");
 
 class UploadController {

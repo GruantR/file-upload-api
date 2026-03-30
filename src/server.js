@@ -5,7 +5,6 @@ require("dotenv").config();
 const { initializeDatabase } = require("./models/index");
 const app = require("./app");
 const logger = require('./utils/logger');
-const ensureS3Bucket = require("./config/ensureS3Bucket");
 
 const fs = require("fs").promises;
 
@@ -29,12 +28,21 @@ async function ensureUploadsFolder() {
 async function startServer() {
   try {
     await ensureUploadsFolder();
-    const dbConnected = await initializeDatabase();
+
+    // Docker "depends_on" doesn't guarantee DB readiness, so retry briefly.
+    const maxAttempts = 10;
+    const delayMs = 2000;
+    let dbConnected = false;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      dbConnected = await initializeDatabase();
+      if (dbConnected) break;
+      logger.warn(`Waiting for database... (attempt ${attempt}/${maxAttempts})`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
     if (!dbConnected) {
       throw new Error("Failed to connect to database");
     }
-
-    await ensureS3Bucket();
 
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);

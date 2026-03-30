@@ -8,14 +8,19 @@ const logger = require("../utils/logger");
 const uploadConfig = require("../config/upload");
 const redis = require("../config/redis");
 
-const { getStorageByType, getStorage } = require("../storage/index");
+const { getStorageByType } = require("../storage/index");
 const { NotFoundError } = require("../utils/errors");
+const ensureS3Bucket = require("../config/ensureS3Bucket");
 
 class UploadService {
   async saveFile(file, userId, storageOption) {
     try {
       const storageType = storageOption === "s3" ? "s3Storage" : "localStorage";
       const storage = getStorageByType(storageType);
+      // Ensure bucket exists only when uploading to S3/MinIO.
+      if (storageType === "s3Storage") {
+        await ensureS3Bucket();
+      }
 
       const savedFile = await File.create({
         fileName: file.filename,

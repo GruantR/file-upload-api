@@ -1,0 +1,38 @@
+name: Smoke test (Docker)
+
+on:
+  push:
+    branches: [ "develop", "main" ]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start containers
+        run: |
+          docker compose up -d --build
+
+      - name: Wait for API health
+        run: |
+          for i in {1..30}; do
+            code="$(curl -sS -o /dev/null -w "%{http_code}" http://localhost:3000/api/health || true)"
+            if [ "$code" = "200" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Migrate + seed
+        run: |
+          docker compose exec -T app npm run db:migrate
+          docker compose exec -T app npm run db:seed
+
+      - name: Final health check
+        run: |
+          curl -sS http://localhost:3000/api/health
+

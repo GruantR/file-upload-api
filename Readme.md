@@ -1,8 +1,21 @@
 # FileFlow Hub
 
-REST API for file storage with **local disk** or **S3-compatible storage (MinIO)**. Includes a small browser demo UI, JWT auth with refresh cookies, PostgreSQL, Redis, and Docker Compose.
+Production-ready file storage API with a built-in demo UI.
+Supports **Local disk** and **S3-compatible storage (MinIO)** with a pluggable storage layer.
+Built with Express + Sequelize (migrations), JWT auth (access + refresh tokens in HttpOnly cookies),
+Redis (rate limiting + caching), Multer upload validation, and Swagger documentation.
 
 ---
+
+## Key highlights
+- Pluggable storage abstraction (`StorageInterface`) with `LocalStorage` + `S3Storage` drivers
+- JWT auth: access token + refresh token rotation, with refresh tokens stored in PostgreSQL and mirrored in Redis
+- Security-focused uploads: Multer validation for file types and size limits
+- RBAC-ready: `user` / `admin` roles for access control over file operations
+- Consistent API errors via a centralized Express error handler
+- Demo UI was built with AI assistance; the backend was implemented independently (showcasing practical AI usage).
+- Sequelize-driven consistency: migrations + transactional file deletion and cleanup logging
+- Redis-backed performance: rate limiting + cached file list queries
 
 ## Quick start (Docker)
 
@@ -11,31 +24,23 @@ Prerequisites: Docker Desktop (or Docker Engine) + `docker-compose`.
 ```bash
 git clone https://github.com/GruantR/fileflow-hub.git
 cd fileflow-hub
-cp .env.example .env
 docker-compose up -d --build
 ```
 
 Apply database schema and optional seed (admin user):
 
+Migrations/seed are executed inside the `app` container:
+
 ```bash
 docker-compose exec app npm run db:migrate && docker-compose exec app npm run db:seed
 ```
 
-Wait ~10-20 seconds for the app to be ready, then verify it:
+Wait ~10-20 seconds for the app to be ready, then verify it.
 
-### Environment variables (Docker-first)
+## Configuration notes (Docker-first)
+In Docker-first mode all required configuration is provided by `docker-compose.yml` (PostgreSQL/Redis/MinIO endpoints + `SECRET_KEY`).
 
-Copy `cp .env.example .env` before starting. In Docker mode defaults are also set in `docker-compose.yml`, but `.env` is used by the app (and is required for “Local run without Docker”).
-
-| Variable | Needed for |
-|---|---|
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | PostgreSQL connection |
-| `DB_DIALECT` | DB dialect (usually `postgres`) |
-| `REDIS_HOST`, `REDIS_PORT` | Redis caching / rate limiting |
-| `SECRET_KEY` | JWT signing key |
-| `STORAGE_DRIVER` | `local` or `s3` |
-| `UPLOADS_PATH` | Where uploaded files are stored on disk |
-| `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` | Required only when `STORAGE_DRIVER=s3` (Cloud / MinIO uploads) |
+To run the app locally without Docker, see the section below.
 
 ### URLs
 
@@ -47,7 +52,7 @@ Copy `cp .env.example .env` before starting. In Docker mode defaults are also se
 | Health | http://localhost:3000/api/health |
 | MinIO Console | http://localhost:9001 |
 
-On startup the app **creates the MinIO bucket** from `MINIO_BUCKET` if it does not exist (so “Cloud (MinIO)” uploads work after a fresh `docker-compose up`).
+When you upload with `storage=s3`, the app **creates the MinIO bucket** from `MINIO_BUCKET` if it does not exist (so Cloud (MinIO) uploads work even on a fresh `docker-compose up`).
 
 ### Health check (JSON)
 
@@ -55,29 +60,11 @@ On startup the app **creates the MinIO bucket** from `MINIO_BUCKET` if it does n
 curl -sS http://localhost:3000/api/health
 ```
 
-`curl` flags:
-- `-s` — silent (не печатает “progress”)
-- `-S` — но выводит ошибки, если запрос неуспешный
+`curl -sS` — `-s` silent, `-S` показывает ошибки при неуспешном запросе.
 
-Example response:
-
+Expected output:
 ```json
-{
-  "status": "OK",
-  "timestamp": "2026-03-30T10:00:00.000Z"
-}
-```
-
-If something is down, response can include diagnostics:
-
-```json
-{
-  "status": "ERROR",
-  "timestamp": "2026-03-30T10:00:00.000Z",
-  "details": {
-    "db": "..."
-  }
-}
+{ "status": "OK", "timestamp": "..." }
 ```
 
 ### Seed admin (after `db:seed`)
@@ -95,26 +82,21 @@ Change the password after first login in a real deployment.
 2. Log in: `admin@example.com` / `admin123`
 3. Upload a file using either **Local** or **Cloud (MinIO)**, then use **View/Download/Delete**
 
+### Core endpoints (main ones)
+- Auth: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
+- Files: `POST /api/files?storage=local|s3`, `GET /api/files`, `GET /api/files/:uuid`, `GET /api/files/:uuid/download`, `DELETE /api/files/:uuid`
+
 ---
 
 ## Storage modes
 
-The demo UI and API let you choose where the file is stored:
+Choose storage during upload:
+- `storage=local` — file is saved on the server disk (demo UI: **Local**)
+- `storage=s3` — file is saved in MinIO (demo UI: **Cloud (MinIO)**; bucket is auto-created on the first upload)
 
-1. **Local storage**
-   - Use `storage=local` on `POST /api/files?...` (demo UI: radio button **Local**).
-   - Files are saved to the server disk.
+Storage is chosen per upload via the `storage` parameter (not via an environment variable).
 
-2. **Cloud (MinIO / S3-compatible)**
-   - Use `storage=s3` on `POST /api/files?...` (demo UI: radio button **Cloud (MinIO)**).
-   - Required env (provided in `docker-compose.yml`): `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`.
-   - On server startup the app ensures `MINIO_BUCKET` exists, so a fresh `docker-compose up` should work without manual bucket creation.
-
-### Optional: Live Server (VS Code) for the demo UI
-
-Recommended: open the demo UI at `http://localhost:3000/` (served by the backend, same origin as the API).
-
-Optional: you can still open `frontend/index.html` via Live Server on `http://127.0.0.1:5500/frontend/` (CORS allows both `127.0.0.1:5500` and `localhost:5500`).
+To verify bucket auto-creation: remove `my-bucket` in MinIO UI, then upload one file with `storage=s3` — the bucket should re-appear.
 
 ---
 
@@ -122,107 +104,30 @@ Optional: you can still open `frontend/index.html` via Live Server on `http://12
 
 Start with logs + health:
 
-1. Health (returns JSON):
+1. Health:
    - `curl -sS http://localhost:3000/api/health`
 2. Backend logs:
    - `docker-compose logs -f app`
-3. If tables are missing (upload/auth errors):
+3. If DB schema is missing:
    - `docker-compose exec app npm run db:migrate && docker-compose exec app npm run db:seed`
 
-Common fixes:
-
-- If the demo UI doesn't work, open `http://localhost:3000/` (it is served by the backend, so requests to `/api` are same-origin).
-- If uploads in **Cloud (MinIO)** fail, verify MinIO is up and `MINIO_BUCKET` matches the bucket in MinIO console (`http://localhost:9001`).
-
 ---
 
-## 30-second smoke test (Docker)
+## Local run without Docker (optional)
+1. Copy config: `cp .env.example .env`
+2. Start dependencies: PostgreSQL + Redis (and MinIO if you use `storage=s3`)
+3. Apply database schema + seed:
+   - `npm run db:migrate`
+   - `npm run db:seed`
+4. Start the server:
+   - `npm run dev`
 
-Use the seeded admin user by default:
-`admin@example.com` / `admin123`
-
-1. Health:
-```bash
-curl -sS http://localhost:3000/api/health
-```
-
-2. Login (copy `accessToken` from the response):
-```bash
-curl -sS -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"admin123"}'
-```
-
-3. Protected call (files list):
-```bash
-ACCESS_TOKEN="PASTE_ACCESS_TOKEN_HERE"
-curl -sS "http://localhost:3000/api/files?limit=10&offset=0" \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
-```
-
----
-
-## Local run without Docker (advanced)
-
-1. Install PostgreSQL (host/port from `.env`) and Redis + MinIO (if you want `storage=s3`).
-2. `cp .env.example .env` and adjust variables.
-3. `npm run db:migrate && npm run db:seed`
-4. `npm run dev`
-
----
-
-## API overview
-
-### Auth
-
-| Method | Endpoint |
-|--------|----------|
-| POST | /api/auth/register |
-| POST | /api/auth/login |
-| POST | /api/auth/refresh |
-| POST | /api/auth/logout |
-
-Protected endpoints expect:
-`Authorization: Bearer <accessToken>`
-
-### Files (Bearer access token)
-
-| Method | Endpoint |
-|--------|----------|
-| POST | /api/files?storage=local \| s3 |
-| GET | /api/files |
-| GET | /api/files/:uuid |
-| GET | /api/files/:uuid/download |
-| DELETE | /api/files/:uuid |
-
-Upload expects `multipart/form-data` with a form field named `file`.
-
----
-
-## Testing
-
-Tests use Jest + Supertest. Load `.env.test` (see `test/__helpers__/setup.js`) and ensure the **test database** exists (e.g. `fileflow_hub_test` on the host/port from `.env.test`).
-
-```bash
-npm test
-```
-
----
-
-## Tech stack
-
-- Node.js, Express
-- PostgreSQL, Sequelize, sequelize-cli
-- JWT, bcrypt, cookie-parser
-- Multer, Redis (ioredis), MinIO (AWS SDK v3)
-- Docker Compose
-
----
+## Tests (Jest + Supertest)
+- Run: `npm test`
+- Redis and S3Storage are mocked for deterministic tests
+- Tests use `.env.test` and create a clean schema in the test Postgres DB (`sequelize.sync({ force: true })`)
+- DB/Redis connections are closed after the test suite finishes
 
 ## Author
 
 **Ruslan Trafimovich** — GitHub: [@GruantR](https://github.com/GruantR)
-
----
-
-No Docker available? See `Local run without Docker (advanced)` section above.

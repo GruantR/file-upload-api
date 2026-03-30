@@ -1,7 +1,6 @@
 // src/routes/index.js
 const express = require('express');
 const router = express.Router();
-const File = require('../models/File');
 const { sequelize } = require('../models');
 const redis = require('../config/redis');
 const uploadRoutes = require('./uploadRoutes');
@@ -56,6 +55,7 @@ router.get('/health', async (req, res) => {
 
 router.get('/test-db', async (req, res) => {
   try {
+    const File = require('../models/File');
     const count = await File.count();
     res.json({ 
       status: 'OK', 
