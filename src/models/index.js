@@ -1,5 +1,5 @@
-//src/models/index.js
-// инициализатор БД
+// src/models/index.js
+// Database initializer
 
 const sequelize = require("../config/database");
 const File = require("./File");
@@ -36,24 +36,19 @@ RefreshToken.belongsTo(User, {
   foreignKey: "userId",
 });
 
-
-
 const initializeDatabase = async () => {
   try {
     await sequelize.authenticate();
-    // грубо - пробный запрос к БД - если ответила - значит она есть и логины пароли верные
-    logger.info(`Подключились к БД ${process.env.DB_NAME}`);
-
+    logger.info(`Connected to database: ${process.env.DB_NAME}`);
     return true;
-    // return true нужен чтобы сообщить вызывающему коду об успехе или неудаче.
   } catch (err) {
-    logger.error("Ошибка подключения к БД:", err.message);
+    logger.error("Database connection error:", err.message);
     return false;
   }
 };
 
 module.exports = {
   models,
-  sequelize, // Экспортируем тоже для миграций
+  sequelize,
   initializeDatabase,
 };

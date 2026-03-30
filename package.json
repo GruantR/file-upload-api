@@ -1,14 +1,21 @@
 {
   "name": "fileflow-hub",
   "version": "1.0.0",
-  "description": "Личный файловый хостинг",
+  "description": "Hybrid file storage with local and S3 support",
   "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/server.js"
+    "dev": "NODE_ENV=development nodemon src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "test": "NODE_ENV=test jest --runInBand --verbose",
+    "test:watch": "NODE_ENV=test jest --watch --verbose",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:seed": "sequelize-cli db:seed:all"
+  },
+  "jest": {
+    "setupFilesAfterEnv": ["<rootDir>/test/__helpers__/setup.js"]
   },
   "keywords": [],
-  "author": "",
+  "author": "Ruslan Trafimovich",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -22,12 +29,16 @@
     "ioredis": "^5.10.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
+    "nodemon": "^3.1.14",
     "pg": "^8.18.0",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11",
-    "sequelize-cli": "^6.6.5"
+    "jest": "^30.3.0",
+    "sequelize-cli": "^6.6.5",
+    "supertest": "^7.2.2"
   }
 }

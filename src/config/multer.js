@@ -1,9 +1,7 @@
-//src/config/multer.js
+// src/config/multer.js
 const multer = require("multer");
 const path = require("path");
-const os = require('os');
-//const UPLOAD_DIR = "./uploads";
-
+const os = require("os");
 
 const allowedTypes = {
   "image/jpeg": [".jpg", ".jpeg"],
@@ -13,22 +11,18 @@ const allowedTypes = {
 };
 
 const storage = multer.diskStorage({
-  // destination: (req, file, callback) => {
-  //   callback(null, UPLOAD_DIR); // ← выбранная папка хранения
-  // },
-
   destination: (req, file, callback) => {
-    callback(null, os.tmpdir()); // ← системная временная папка
+    callback(null, os.tmpdir());
   },
-  
+
   filename: (req, file, callback) => {
     const extension = path.extname(file.originalname).toLowerCase();
     const basename = path.basename(file.originalname, extension);
     const cleanedName =
       basename
-        .replace(/\s+/g, "-") // пробелы → дефисы
-        .replace(/[^a-zA-Z0-9-_]/g, "") // убрать спецсимволы
-        .replace(/-+/g, "-") // несколько дефисов → один
+        .replace(/\s+/g, "-")
+        .replace(/[^a-zA-Z0-9-_]/g, "")
+        .replace(/-+/g, "-")
         .substring(0, 50) || "file";
 
     const timestamp = Date.now();
@@ -48,7 +42,7 @@ const fileFilter = (req, file, callback) => {
     !allowedTypes[mimeType] ||
     !allowedTypes[mimeType].includes(extension)
   ) {
-    return callback(new Error("Недопустимый тип файла"), false);
+    return callback(new Error("Invalid file type"), false);
   }
   return callback(null, true);
 };
@@ -58,10 +52,9 @@ const limits = {
 };
 
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: limits,
+  storage,
+  fileFilter,
+  limits,
 });
 
-//multer() - Это конструктор, который создаёт middleware на основе твоих настроек. Без вызова multer() — это просто объект.
 module.exports = upload;

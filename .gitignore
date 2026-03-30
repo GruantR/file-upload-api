@@ -1,6 +1,7 @@
 node_modules/
 .env
+.env.production
+.env.test
 .vscode/
 
-# Папка для загруженных файлов (ВАЖНО!)
 uploads/

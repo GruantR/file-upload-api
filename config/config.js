@@ -1,21 +1,17 @@
-const { database } = require('pg/lib/defaults');
-
 require('dotenv').config();
 
+const common = {
+  dialect: 'postgres',
+  logging: false,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+};
+
 module.exports = {
-  development: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres',
-    logging: false
-  },
-  test:{
-
-  },
-  production: {
-
-  }
+  development: { ...common },
+  test: { ...common },
+  production: { ...common },
 };

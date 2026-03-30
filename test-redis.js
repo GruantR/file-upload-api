@@ -5,14 +5,14 @@ async function test() {
     try {
         await redis.set('test', 'Hello Redis!');
         const value = await redis.get('test');
-        logger.info('✅ Значение из Redis:', value);
+        logger.info('✅ Value from Redis:', value);
         
         await redis.del('test');
-        logger.info('✅ Ключ удалён');
+        logger.info('✅ Key deleted');
         
         process.exit(0);
     } catch (err) {
-        logger.error('❌ Ошибка:', err);
+        logger.error('❌ Error:', err);
         process.exit(1);
     }
 }

@@ -1,26 +1,17 @@
-// src/storage/index
-// Эта фабрика будет читать из .env тип хранилища (local или s3) и создавать нужный объект.
-
-
+// src/storage/index.js
+// Storage factory: returns driver based on storage type stored in DB (localStorage/s3Storage)
 
 const LocalStorage = require('./drivers/LocalStorage');
 const S3Storage = require('./drivers/S3Storage');
 
 const getStorageByType = (type) => {
-        switch(type) {
+    switch(type) {
         case 'localStorage':
             return new LocalStorage();
         case 's3Storage':
             return new S3Storage();
-        default: return new LocalStorage();
+        default:
+            return new LocalStorage();
     }
 };
-//getStorageByType(type) — получает драйвер по типу из БД
-
-const getStorage = () => {
-    const driver = process.env.STORAGE_DRIVER === 's3' ? 's3Storage' : 'localStorage';
-    return getStorageByType(driver);
-};
-//getStorage() — как раньше, для обратной совместимости
-
-module.exports = {getStorageByType, getStorage} ;
+module.exports = { getStorageByType };
