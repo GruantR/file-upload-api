@@ -6,10 +6,11 @@ REST API for file storage with **local disk** or **S3-compatible storage (MinIO)
 
 ## Quick start (Docker)
 
+Prerequisites: Docker Desktop (or Docker Engine) + `docker-compose`.
+
 ```bash
 git clone https://github.com/GruantR/fileflow-hub.git
 cd fileflow-hub
-npm install
 cp .env.example .env
 docker-compose up -d --build
 ```
@@ -17,11 +18,10 @@ docker-compose up -d --build
 Apply database schema and optional seed (admin user):
 
 ```bash
-docker-compose exec app npm run db:migrate
-docker-compose exec app npm run db:seed
+docker-compose exec app npm run db:migrate && docker-compose exec app npm run db:seed
 ```
 
-> Replace the clone URL with your fork if needed.
+Wait ~10-20 seconds for the app to be ready, then verify it:
 
 ### URLs
 
@@ -35,6 +35,21 @@ docker-compose exec app npm run db:seed
 
 On startup the app **creates the MinIO bucket** from `MINIO_BUCKET` if it does not exist (so “Cloud (MinIO)” uploads work after a fresh `docker-compose up`).
 
+### Health check (JSON)
+
+```bash
+curl -sS http://localhost:3000/api/health
+```
+
+Example response:
+
+```json
+{
+  "status": "OK",
+  "timestamp": "2026-03-30T10:00:00.000Z"
+}
+```
+
 ### Seed admin (after `db:seed`)
 
 | Field | Value |
@@ -44,19 +59,85 @@ On startup the app **creates the MinIO bucket** from `MINIO_BUCKET` if it does n
 
 Change the password after first login in a real deployment.
 
+### Try the demo UI
+
+1. Open `http://localhost:3000/`
+2. Log in: `admin@example.com` / `admin123`
+3. Upload a file using either **Local** or **Cloud (MinIO)**, then use **View/Download/Delete**
+
+---
+
+## Storage modes
+
+The demo UI and API let you choose where the file is stored:
+
+1. **Local storage**
+   - Use `storage=local` on `POST /api/files?...` (demo UI: radio button **Local**).
+   - Files are saved to the server disk.
+
+2. **Cloud (MinIO / S3-compatible)**
+   - Use `storage=s3` on `POST /api/files?...` (demo UI: radio button **Cloud (MinIO)**).
+   - Required env (provided in `docker-compose.yml`): `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`.
+   - On server startup the app ensures `MINIO_BUCKET` exists, so a fresh `docker-compose up` should work without manual bucket creation.
+
 ### Optional: Live Server (VS Code) for the demo UI
 
-You can open `frontend/index.html` via Live Server (e.g. `http://127.0.0.1:5500/frontend/`). The demo script talks to `http://127.0.0.1:3000/api` when the page is not served from port 3000. Ensure the API is running and CORS allows `http://127.0.0.1:5500` and `http://localhost:5500` (already configured in `src/app.js`).
+Recommended: open the demo UI at `http://localhost:3000/` (served by the backend, same origin as the API).
+
+Optional: you can still open `frontend/index.html` via Live Server on `http://127.0.0.1:5500/frontend/` (CORS allows both `127.0.0.1:5500` and `localhost:5500`).
+
+---
+
+## Troubleshooting
+
+Start with logs + health:
+
+1. Health (returns JSON):
+   - `curl -sS http://localhost:3000/api/health`
+2. Backend logs:
+   - `docker-compose logs -f app`
+3. If tables are missing (upload/auth errors):
+   - `docker-compose exec app npm run db:migrate && docker-compose exec app npm run db:seed`
+
+Common fixes:
+
+- If the demo UI doesn't work, open `http://localhost:3000/` (it is served by the backend, so requests to `/api` are same-origin).
+- If uploads in **Cloud (MinIO)** fail, verify MinIO is up and `MINIO_BUCKET` matches the bucket in MinIO console (`http://localhost:9001`).
+
+---
+
+## 30-second smoke test (Docker)
+
+Use the seeded admin user by default:
+`admin@example.com` / `admin123`
+
+1. Health:
+```bash
+curl -sS http://localhost:3000/api/health
+```
+
+2. Login (copy `accessToken` from the response):
+```bash
+curl -sS -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"admin123"}'
+```
+
+3. Protected call (files list):
+```bash
+ACCESS_TOKEN="PASTE_ACCESS_TOKEN_HERE"
+curl -sS "http://localhost:3000/api/files?limit=10&offset=0" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
 
 ---
 
 ## Local run without Docker (advanced)
 
-1. Install and run PostgreSQL (port in `.env` must match; example uses `5433` if you map Docker Postgres to host).
-2. Run Redis and MinIO if you use S3 mode.
-3. `cp .env.example .env` and adjust variables.
-4. `npm run db:migrate` and `npm run db:seed`
-5. `npm run dev`
+1. Install PostgreSQL (host/port from `.env`) and Redis + MinIO (if you want `storage=s3`).
+2. `cp .env.example .env` and adjust variables.
+3. `npm run db:migrate && npm run db:seed`
+4. `npm run dev`
 
 ---
 
@@ -71,6 +152,9 @@ You can open `frontend/index.html` via Live Server (e.g. `http://127.0.0.1:5500/
 | POST | /api/auth/refresh |
 | POST | /api/auth/logout |
 
+Protected endpoints expect:
+`Authorization: Bearer <accessToken>`
+
 ### Files (Bearer access token)
 
 | Method | Endpoint |
@@ -80,6 +164,8 @@ You can open `frontend/index.html` via Live Server (e.g. `http://127.0.0.1:5500/
 | GET | /api/files/:uuid |
 | GET | /api/files/:uuid/download |
 | DELETE | /api/files/:uuid |
+
+Upload expects `multipart/form-data` with a form field named `file`.
 
 ---
 
@@ -106,3 +192,7 @@ npm test
 ## Author
 
 **Ruslan Trafimovich** — GitHub: [@GruantR](https://github.com/GruantR)
+
+---
+
+No Docker available? See `Local run without Docker (advanced)` section above.
